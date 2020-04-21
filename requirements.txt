@@ -1,0 +1,4 @@
+monotonic==1.5
+whatthepatch==0.0.6
+wrapt==1.12.1
+GitPython==3.1.1
