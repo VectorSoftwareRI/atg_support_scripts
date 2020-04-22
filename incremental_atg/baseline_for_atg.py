@@ -5,7 +5,7 @@ import shutil
 import sys
 import subprocess
 import filecmp
-from merge_display_attributes import *
+from incremental_atg.merge_display_attributes import *
 
 FILE_BL = "bl.tst"
 FILE_ATG = "atg.tst"
