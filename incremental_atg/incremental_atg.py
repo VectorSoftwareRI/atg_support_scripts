@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import git
-import whatthepatch
-import sqlite3
 import itertools
 import multiprocessing
 import subprocess
@@ -11,10 +8,10 @@ import monotonic
 import sys
 
 from incremental_atg.baseline_for_atg import Baseline
+from incremental_atg.misc import *
 
 from multiprocessing.dummy import Pool as ThreadPool
 
-from incremental_atg.misc import *
 
 def wrap_class_method(args):
     """

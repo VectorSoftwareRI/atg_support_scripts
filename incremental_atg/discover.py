@@ -4,13 +4,6 @@ import os
 import git
 import whatthepatch
 import sqlite3
-import itertools
-import multiprocessing
-import subprocess
-import monotonic
-import sys
-
-from multiprocessing.dummy import Pool as ThreadPool
 
 from incremental_atg.misc import *
 
