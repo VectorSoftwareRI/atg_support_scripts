@@ -11,7 +11,9 @@ import incremental_atg.default_parser as default_parser
 
 
 def incremental_atg(options):
-    process_s2n = False
+    """
+    Performs ATG
+    """
 
     config_py = options.config_py.replace(os.sep, ".").replace(".py", "")
     configuration_module = importlib.import_module(config_py)
@@ -93,9 +95,10 @@ def incremental_atg(options):
         # module
         #
         updated_files = []
-        configuration_module.persist_changes()
+        configuration_module.persist_changes(updated_files)
 
     return 0
+
 
 def main():
     parser = default_parser.get_default_parser()

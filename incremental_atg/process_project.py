@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import monotonic
 import shutil
 
 import incremental_atg.baseline_for_atg as baseline_for_atg
