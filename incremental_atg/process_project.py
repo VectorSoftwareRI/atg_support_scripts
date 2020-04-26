@@ -23,7 +23,7 @@ def wrap_class_method(args):
     func(*args)
 
 
-class IncrementalATG(object):
+class ProcessProject(object):
     """
     Given a Manage project and a set of environments, re-runs the "impacted"
     environments/routines

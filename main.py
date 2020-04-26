@@ -3,8 +3,8 @@
 import os
 import sys
 
-from incremental_atg.discover import *
-from incremental_atg.incremental_atg import *
+import incremental_atg.discover as atg_discover
+import incremental_atg.process_project as atg_processor
 import incremental_atg.misc as atg_misc
 
 def do_s2n():
@@ -55,7 +55,7 @@ def main():
     repo_path, manage_path, final_tst_path, current_sha, new_sha, timeout = do_atg_workflow()
 
     # Use our class to find the changed files for a given repo
-    dcf = DiscoverChangedFiles(repo_path)
+    dcf = atg_discover.DiscoverChangedFiles(repo_path)
 
     # Get the changed files between our two commits
     changed_files = dcf.get_changed_files(current_sha, new_sha)
@@ -70,7 +70,7 @@ def main():
     # Use our class to find the relationship between files/VectorCAST
     # environments
     #
-    dmd = DiscoverManageDependencies(manage_path, repo_path)
+    dmd = atg_discover.DiscoverManageDependencies(manage_path, repo_path)
     dmd.calculate_deps()
 
     # Mapping from files to environments that use those files
@@ -108,7 +108,7 @@ def main():
     baseline_iterations = 1
 
     # Create an incremental ATG object
-    ia = IncrementalATG(
+    ia = atg_processor.ProcessProject(
         manage_path, impacted_envs, envs_to_units, timeout, baseline_iterations,
         final_tst_path
     )
