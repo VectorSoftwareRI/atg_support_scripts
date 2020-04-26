@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import multiprocessing
 import subprocess
 import monotonic
 import sys
@@ -10,17 +9,6 @@ import shutil
 import incremental_atg.baseline_for_atg as baseline_for_atg
 import incremental_atg.misc as atg_misc
 import incremental_atg.tst_editor as tst_editor
-
-from multiprocessing.dummy import Pool as ThreadPool
-
-
-def wrap_class_method(args):
-    """
-    You cannot pass a class method into pool.map -- so we use a helper function
-    to call our really class method
-    """
-    func, args = args
-    func(*args)
 
 
 class ProcessProject(object):
@@ -68,16 +56,10 @@ class ProcessProject(object):
         elif not os.path.isdir(self.final_tst_path):
             raise RuntimeError("your final path is a file")
 
-        # Mutex to allow for threads to update class state
-        self.mutex = multiprocessing.Lock()
-
         # Initialise the environment object
         for env in self.impacted_environments:
             self.env_tsts[env] = {}
             self.merged_tsts[env] = {}
-            
-        # When running in parallel, how many workers?
-        self.worker_count = multiprocessing.cpu_count()
 
     def get_edg_flags(self, env_path):
         """
@@ -136,7 +118,12 @@ class ProcessProject(object):
         unit = os.path.splitext(os.path.basename(src_file))[0]
 
         # What's the prefix of our all outputs?
-        output_prefix = os.path.join(env_path, "{env:s}_{unit:s}_{routine:s}".format(env=env, unit=unit, routine=routine_name))
+        output_prefix = os.path.join(
+            env_path,
+            "{env:s}_{unit:s}_{routine:s}".format(
+                env=env, unit=unit, routine=routine_name
+            ),
+        )
 
         # Where is ATG going to write its log to?
         log_file = "{:s}.log".format(output_prefix)
@@ -244,34 +231,6 @@ class ProcessProject(object):
         # Release the lock
         self.mutex.release()
 
-    def run_routine_parallel(self, routine, routine_contexts):
-        """
-        Given a routine and routine context, builds-up what is neccessary to
-        call the routine via a parallel pool
-        """
-
-        #
-        # What's the 'execution context' for subprocess?
-        #
-        # We acutally call 'wrap_class_method', which 'unboxes' routine and
-        # calls that
-        #
-        execution_contexts = []
-        for routine_context in routine_contexts:
-            execution_contexts.append([routine] + [list(routine_context)])
-
-        # Worker pooler
-        pool = ThreadPool(self.worker_count)
-
-        # Run the call method in parallel over the 'context'
-        pool.map(wrap_class_method, execution_contexts, chunksize=1)
-
-        # Wait for all the workers
-        pool.close()
-
-        # Join all workers
-        pool.join()
-
     @atg_misc.log_entry_exit
     def run_atg(self):
         """
@@ -333,7 +292,9 @@ class ProcessProject(object):
                 succeeded = "succeeded" if routine_tst is not None else "failed"
 
                 # Write-out a message
-                msg = "-- ATG {:s} for {:s} (in unit {:s}) --".format(succeeded, routine_name, source_name)
+                msg = "-- ATG {:s} for {:s} (in unit {:s}) --".format(
+                    succeeded, routine_name, source_name
+                )
                 header = "-" * len(msg)
                 output = [header, msg, header]
                 for elem in output:
@@ -363,7 +324,12 @@ class ProcessProject(object):
         env_file = os.path.join(build_dir, "{:s}.env").format(env_name)
 
         baseliner = baseline_for_atg.Baseline(env_file=env_file, verbose=0)
-        baseliner.run(run_atg=False, atg_file=merged_tst_name, max_iter=self.baseline_iterations, copy_out_manage=False)
+        baseliner.run(
+            run_atg=False,
+            atg_file=merged_tst_name,
+            max_iter=self.baseline_iterations,
+            copy_out_manage=False,
+        )
 
     def prune_and_merge_one_environment(self, env_path):
         """
@@ -382,19 +348,29 @@ class ProcessProject(object):
 
         manage_project_dir = os.path.dirname(manage_build_dir)
         manage_environment_dir = os.path.join(manage_project_dir, "environment")
-        assert os.path.exists(manage_environment_dir) and os.path.isdir(manage_environment_dir)
+        assert os.path.exists(manage_environment_dir) and os.path.isdir(
+            manage_environment_dir
+        )
 
         enviroment_artefacts = os.path.join(manage_environment_dir, env_name)
-        assert os.path.exists(enviroment_artefacts) and os.path.isdir(enviroment_artefacts)
+        assert os.path.exists(enviroment_artefacts) and os.path.isdir(
+            enviroment_artefacts
+        )
 
-        existing_tst = os.path.join(enviroment_artefacts, "{env:s}.tst").format(env=env_name)
+        existing_tst = os.path.join(enviroment_artefacts, "{env:s}.tst").format(
+            env=env_name
+        )
         assert os.path.exists(existing_tst) and os.path.isfile(existing_tst)
 
         no_atg_tst = os.path.join(build_dir, "no_atg.tst")
-        tst_edit_instance = tst_editor.TstFile(input_file=existing_tst, output_file=no_atg_tst)
+        tst_edit_instance = tst_editor.TstFile(
+            input_file=existing_tst, output_file=no_atg_tst
+        )
         match_all_subprograms = ".*"
         match_atg_tests = "^TEST.NAME:.*ATG"
-        tst_edit_instance.remove(subprogram_regex=match_all_subprograms, re_pattern=match_atg_tests)
+        tst_edit_instance.remove(
+            subprogram_regex=match_all_subprograms, re_pattern=match_atg_tests
+        )
 
         #
         # TODO: this tst has two header blocks in it?

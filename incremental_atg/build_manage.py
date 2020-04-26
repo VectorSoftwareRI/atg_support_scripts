@@ -8,8 +8,12 @@ import subprocess
 import incremental_atg.misc as atg_misc
 
 
-class ManageBuilder(object):
+class ManageBuilder(atg_misc.ParallelExecutor):
     def __init__(self, manage_vcm_path, cleanup=False):
+
+        # Call the super constructor
+        super().__init__()
+
         self.manage_vcm_path = manage_vcm_path
 
         # Manage file must exist
@@ -53,6 +57,14 @@ class ManageBuilder(object):
         # What's the name of the Manage executable?
         self.manage_exe = os.path.expandvars(os.path.join("$VECTORCAST_DIR", "manage"))
 
+        # What's the name of the clicast executable?
+        self.clicast_exe = os.path.expandvars(
+            os.path.join("$VECTORCAST_DIR", "clicast")
+        )
+
+        # The set of all environments in this Manage project
+        self.environments = set()
+
     def run_manage_command(self, cmd_suffix):
         """
         Helper to run part of a Manage command
@@ -69,6 +81,7 @@ class ManageBuilder(object):
         # Manage sure it didn't fail
         assert not returncode
 
+    @atg_misc.log_entry_exit
     def add_script(self, script_path, script_name):
         """
         Add our build script to the Manage project
@@ -82,6 +95,7 @@ class ManageBuilder(object):
         build_script = "--build-script {script:s}".format(script=script_name)
         self.run_manage_command(build_script)
 
+    @atg_misc.log_entry_exit
     def populate_build_folder(self):
         """
         'Populates' Manages build folder
@@ -94,6 +108,7 @@ class ManageBuilder(object):
         # Make sure we now have a build folder!
         assert os.path.isdir(self.build_folder)
 
+    @atg_misc.log_entry_exit
     def remove_script(self, script_name):
         """
         Remove our tempoary build script
@@ -108,6 +123,39 @@ class ManageBuilder(object):
             script=script_name
         )
         self.run_manage_command(delete_script)
+
+    @atg_misc.log_entry_exit
+    def discover_environments(self):
+        """
+        Walk the Manage build folder and discover the VectorCAST environments
+        """
+
+        # Walk the root
+        for root, _, files in os.walk(self.build_folder):
+
+            # For each file
+            for fname in files:
+
+                # If the file ends with '.env'
+                if fname.lower().endswith(".env"):
+
+                    # What's the environment name?
+                    env_name = os.path.splitext(fname)[0]
+
+                    # What's the build folder?
+                    build_dir = os.path.abspath(root)
+
+                    #
+                    # We only want to process environments that have a
+                    # CCAST_.CFG next to them.
+                    #
+                    # For example, the 'environment' folder in Manage _does
+                    # not_ have this.
+                    #
+                    if os.path.exists(os.path.join(build_dir, "CCAST_.CFG")):
+
+                        # If we have 'CCAST_.CFG', store this folder
+                        self.environments.add((env_name, build_dir))
 
     def process(self):
         """
@@ -131,6 +179,30 @@ class ManageBuilder(object):
 
             # Remove the script
             self.remove_script(basename)
+
+        self.discover_environments()
+
+        self.run_routine_parallel(self.print_env, self.environments)
+
+    def print_env(self, env_name, env_location):
+
+        env_script = "{env:s}.env".format(env=env_name)
+        full_script = os.path.join(env_location, env_script)
+        assert os.path.exists(full_script) and os.path.isfile(full_script)
+
+        built_env = os.path.join(env_location, env_name)
+        assert not os.path.exists(built_env)
+
+        cmd = "{clicast:s} -lc environment script run {env_script:s}".format(
+            clicast=self.clicast_exe, env_script=env_script
+        )
+
+        output_prefix = os.path.join(env_location, "rebuild")
+        stdout, stderr, returncode = atg_misc.run_cmd(
+            cmd, env_location, log_file_prefix=output_prefix
+        )
+
+        assert os.path.exists(built_env) and os.path.isdir(built_env)
 
 
 if __name__ == "__main__":

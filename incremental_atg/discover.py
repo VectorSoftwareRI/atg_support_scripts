@@ -7,6 +7,7 @@ import sqlite3
 
 import incremental_atg.misc as atg_misc
 
+
 class DiscoverChangedFiles(object):
     """
     Class to return the list of file changes for a given repo
@@ -191,39 +192,6 @@ FROM   functions
 
         # Calulate the map between environments and TUs
         self.find_units_functions(env_path)
-
-    def find_envs(self):
-        """
-        Walk a 'project_root' and discover the VectorCAST environments starting
-        from the root
-        """
-
-        # Walk the root
-        for root, _, files in os.walk(self.project_root):
-
-            # For each file
-            for file in files:
-
-                # If the file ends with '.env'
-                if file.lower().endswith(".env"):
-
-                    # What's the environment name?
-                    env_name = os.path.splitext(file)[0]
-
-                    # What's the build folder?
-                    build_dir = os.path.abspath(root)
-
-                    #
-                    # We only want to process environments that have a
-                    # CCAST_.CFG next to them.
-                    #
-                    # For example, the 'environment' folder in Manage _does
-                    # not_ have this.
-                    #
-                    if os.path.exists(os.path.join(build_dir, "CCAST_.CFG")):
-
-                        # If we have 'CCAST_.CFG', store this folder
-                        self.environments.add((env_name, build_dir))
 
     @atg_misc.log_entry_exit
     def calculate_deps(self):

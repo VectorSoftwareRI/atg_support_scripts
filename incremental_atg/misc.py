@@ -2,6 +2,9 @@ import wrapt
 import subprocess
 import shlex
 import os
+import multiprocessing
+import monotonic
+from multiprocessing.dummy import Pool as ThreadPool
 
 
 @wrapt.decorator
@@ -33,7 +36,7 @@ def parse_git_for_hashes(repo="."):
     return (head_sha, branch_sha)
 
 
-def run_cmd(cmd, cwd, environ=None, timeout=None):
+def run_cmd(cmd, cwd, environ=None, timeout=None, log_file_prefix=None):
 
     if not environ:
         environ = os.environ.copy()
@@ -47,6 +50,9 @@ def run_cmd(cmd, cwd, environ=None, timeout=None):
         "cwd": cwd,
         "env": environ,
     }
+
+    # Start a timer
+    start = monotonic.monotonic()
 
     # Start the process
     with subprocess.Popen(cmd, **kwargs) as process:
@@ -62,7 +68,80 @@ def run_cmd(cmd, cwd, environ=None, timeout=None):
             # Grab the output
             stdout, stderr = process.communicate()
 
+    # End the clock
+    end = monotonic.monotonic()
+
+    # Calculate the duration
+    elapsed_time = end - start
+
+    if log_file_prefix:
+        out_log_file = "{prefix}.out".format(prefix=log_file_prefix)
+        err_log_file = "{prefix}.err".format(prefix=log_file_prefix)
+
+        modified_stdout = stdout
+
+        # Write the duration to the log
+        modified_stdout += "\nElapsed seconds: {:.2f}\n".format(elapsed_time)
+
+        # What's the return code?
+        returncode = process.returncode
+
+        # Write the return code to the log
+        modified_stdout += "\nReturn code: {retcode}\n".format(retcode=returncode)
+
+        with open(out_log_file, "w") as output_fd:
+            output_fd.write(modified_stdout)
+
+        with open(err_log_file, "w") as err_fd:
+            err_fd.write(stderr)
+
     return stdout, stderr, process.returncode
+
+
+class ParallelExecutor(object):
+    def __init__(self):
+        # When running in parallel, how many workers?
+        self.worker_count = multiprocessing.cpu_count()
+
+        # Mutex to allow for threads to update class state
+        self.mutex = multiprocessing.Lock()
+
+    def run_routine_parallel(self, routine, routine_contexts):
+        """
+        Given a routine and routine context, builds-up what is neccessary to
+        call the routine via a parallel pool
+        """
+
+        #
+        # What's the 'execution context' for subprocess?
+        #
+        # We acutally call 'wrap_class_method', which 'unboxes' routine and
+        # calls that
+        #
+        execution_contexts = []
+        for routine_context in routine_contexts:
+            execution_contexts.append([routine] + [list(routine_context)])
+
+        # Worker pooler
+        pool = ThreadPool(self.worker_count)
+
+        # Run the call method in parallel over the 'context'
+        pool.map(wrap_class_method, execution_contexts, chunksize=1)
+
+        # Wait for all the workers
+        pool.close()
+
+        # Join all workers
+        pool.join()
+
+
+def wrap_class_method(args):
+    """
+    You cannot pass a class method into pool.map -- so we use a helper function
+    to call our really class method
+    """
+    func, args = args
+    func(*args)
 
 
 # EOF
