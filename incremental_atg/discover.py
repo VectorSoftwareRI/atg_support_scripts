@@ -73,23 +73,23 @@ class DiscoverManageDependencies(atg_misc.ParallelExecutor):
                     rel_fname = os.path.relpath(fname, self.repository_prefix)
 
                     # We're about to update the shared state, so grab the lock
-                    self.mutex.acquire()
+                    with self.update_shared_state():
 
-                    # If we haven't seen this file name before ...
-                    if rel_fname not in self.fnames_to_envs:
-                        # ... initialise the dictionary
-                        self.fnames_to_envs[rel_fname] = set()
+                        # If we haven't seen this file name before ...
+                        if rel_fname not in self.fnames_to_envs:
+                            # ... initialise the dictionary
+                            self.fnames_to_envs[rel_fname] = set()
 
-                    # Store that this environment depends on this file
-                    self.fnames_to_envs[rel_fname].add(env_path)
+                        # Store that this environment depends on this file
+                        self.fnames_to_envs[rel_fname].add(env_path)
 
-                    if env_path not in self.envs_to_fnames:
-                        self.envs_to_fnames[env_path] = set()
+                        # If we haven't seen the env before ...
+                        if env_path not in self.envs_to_fnames:
+                            # ... add it to our dict
+                            self.envs_to_fnames[env_path] = set()
 
-                    self.envs_to_fnames[env_path].add(rel_fname)
-
-                    # Release the lock
-                    self.mutex.release()
+                        # Store the files used inside of this environment
+                        self.envs_to_fnames[env_path].add(rel_fname)
 
     def find_units_functions(self, env_path):
         """
@@ -133,13 +133,10 @@ FROM   functions
             units_to_functions[source_file_path].append(function_name)
 
         # We're about to update the shared state, so grab the lock
-        self.mutex.acquire()
+        with self.update_shared_state():
 
-        # Store details for this env
-        self.envs_to_units[env_path] = units_to_functions
-
-        # Release the lock
-        self.mutex.release()
+            # Store details for this env
+            self.envs_to_units[env_path] = units_to_functions
 
     def process_env(self, env_path):
         """

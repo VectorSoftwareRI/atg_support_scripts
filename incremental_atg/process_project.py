@@ -221,13 +221,10 @@ class ProcessProject(atg_misc.ParallelExecutor):
             tst_file = None
 
         # We're about to update the shared state, so grab the lock
-        self.mutex.acquire()
+        with self.update_shared_state():
 
-        # Update the shared state
-        self.env_tsts[env_path][(unit, routine_name)] = tst_file
-
-        # Release the lock
-        self.mutex.release()
+            # Update the shared state
+            self.env_tsts[env_path][(unit, routine_name)] = tst_file
 
     @atg_misc.log_entry_exit
     def run_atg(self):
@@ -303,13 +300,10 @@ class ProcessProject(atg_misc.ParallelExecutor):
                     merged_fd.write(open(routine_tst).read())
 
         # We're about to update the shared state, so grab the lock
-        self.mutex.acquire()
+        with self.update_shared_state():
 
-        # Update the shared state
-        self.merged_tsts[env_path] = merged_tst
-
-        # Release the lock
-        self.mutex.release()
+            # Update the shared state
+            self.merged_tsts[env_path] = merged_tst
 
     def baseline_one_environment(self, env_path):
         """

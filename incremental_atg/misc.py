@@ -5,6 +5,7 @@ import os
 import multiprocessing
 import monotonic
 from multiprocessing.dummy import Pool as ThreadPool
+from contextlib import contextmanager
 
 
 @wrapt.decorator
@@ -147,6 +148,14 @@ class ParallelExecutor(object):
 
         # Join all workers
         pool.join()
+
+    @contextmanager
+    def update_shared_state(self):
+        self.mutex.acquire()
+        try:
+            yield
+        finally:
+            self.mutex.release()
 
 
 # EOF
