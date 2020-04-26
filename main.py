@@ -12,10 +12,18 @@ import incremental_atg.build_manage as build_manage
 
 def do_s2n():
     # What's the path to our repo?
-    repo_path = os.path.abspath(os.path.expandvars("${HOME}/clones/vc/src/s2n"))
+    repo_path = os.path.abspath(os.path.expandvars("${HOME}/clones/s2n_vc/src/s2n"))
 
     # What's the path to our Manage root folder?
-    manage_path = os.path.abspath(os.path.expandvars("${HOME}/clones/vc/vcast"))
+    vcm_path = os.path.abspath(
+        os.path.expandvars("${HOME}/clones/s2n_vc/vcast/s2n_vc.vcm")
+    )
+
+    # Path to the Manage artefacts
+    manage_path = os.path.splitext(vcm_path)[0]
+
+    # What's the path to our Manage root folder?
+    final_tst_path = os.path.join(manage_path, "environment")
 
     # What's the path to root src tree?
     src_path = os.path.dirname(repo_path)
@@ -30,7 +38,7 @@ def do_s2n():
     # How long for ATG?
     timeout = 2
 
-    return repo_path, manage_path, current_sha, new_sha, timeout
+    return repo_path, vcm_path, final_tst_path, current_sha, new_sha, timeout
 
 
 def do_atg_workflow():
@@ -44,13 +52,11 @@ def do_atg_workflow():
         os.path.expandvars("${HOME}/clones/atg_workflow_vc/vcast/atg_workflow_vc.vcm")
     )
 
-    manage_path = os.path.dirname(vcm_path)
+    # Path to the Manage artefacts
+    manage_path = os.path.splitext(vcm_path)[0]
 
     # What's the path to our Manage root folder?
-    final_tst_path = os.path.abspath(
-        os.path.expandvars("${HOME}/clones/atg_workflow_vc/vcast_generated")
-    )
-    final_tst_path = os.path.join(manage_path, "atg_workflow_vc", "environment")
+    final_tst_path = os.path.join(manage_path, "environment")
 
     # Set the environment variable needed for the environments to build
     os.environ["ATG_WORKFLOW_VC_SRC_PATH"] = repo_path
@@ -72,12 +78,12 @@ def main():
         current_sha,
         new_sha,
         timeout,
-    ) = do_atg_workflow()
+    ) = do_s2n()  # do_atg_workflow()
 
     git_analysis = atg_scm_hooks.GitImpactedObjectFinder(repository_path)
     preserved_files = git_analysis.calculate_preserved_files(current_sha, new_sha)
 
-    manage_builder = build_manage.ManageBuilder(manage_vcm_path, skip_build=True)
+    manage_builder = build_manage.ManageBuilder(manage_vcm_path, cleanup=True)
     manage_builder.process()
 
     manage_dependencies = atg_discover.DiscoverManageDependencies(

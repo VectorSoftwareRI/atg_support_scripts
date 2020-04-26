@@ -72,6 +72,9 @@ class DiscoverManageDependencies(atg_misc.ParallelExecutor):
                     #
                     rel_fname = os.path.relpath(fname, self.repository_prefix)
 
+                    # We're about to update the shared state, so grab the lock
+                    self.mutex.acquire()
+
                     # If we haven't seen this file name before ...
                     if rel_fname not in self.fnames_to_envs:
                         # ... initialise the dictionary
@@ -84,6 +87,9 @@ class DiscoverManageDependencies(atg_misc.ParallelExecutor):
                         self.envs_to_fnames[env_path] = set()
 
                     self.envs_to_fnames[env_path].add(rel_fname)
+
+                    # Release the lock
+                    self.mutex.release()
 
     def find_units_functions(self, env_path):
         """
@@ -126,8 +132,14 @@ FROM   functions
             # Store this function
             units_to_functions[source_file_path].append(function_name)
 
+        # We're about to update the shared state, so grab the lock
+        self.mutex.acquire()
+
         # Store details for this env
         self.envs_to_units[env_path] = units_to_functions
+
+        # Release the lock
+        self.mutex.release()
 
     def process_env(self, env_path):
         """
