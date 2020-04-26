@@ -75,22 +75,27 @@ def incremental_atg(options):
             impacted_envs,
         )
 
-        sys.exit(-1)
+    else:
+        # Create an incremental ATG object
+        ia = atg_processor.ProcessProject(
+            impacted_envs,
+            manage_dependencies.envs_to_units,
+            options.timeout,
+            options.baseline_iterations,
+            final_tst_path,
+        )
 
-    # Create an incremental ATG object
-    ia = atg_processor.ProcessProject(
-        impacted_envs,
-        manage_dependencies.envs_to_units,
-        options.timeout,
-        options.baseline_iterations,
-        final_tst_path,
-    )
+        # Process our environments
+        ia.process()
 
-    # Process our environments
-    ia.process()
+        #
+        # TODO: get the changed files and pass them in to the persistence
+        # module
+        #
+        updated_files = []
+        configuration_module.persist_changes()
 
-    return True
-
+    return 0
 
 def main():
     parser = default_parser.get_default_parser()
