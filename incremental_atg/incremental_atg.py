@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
 import os
-import itertools
 import multiprocessing
 import subprocess
 import monotonic
 import sys
+import shutil
 
-from incremental_atg.baseline_for_atg import Baseline
-from incremental_atg.misc import *
+import incremental_atg.baseline_for_atg as baseline_for_atg
+import incremental_atg.misc as atg_misc
+import incremental_atg.tst_editor as tst_editor
 
 from multiprocessing.dummy import Pool as ThreadPool
 
@@ -32,9 +33,10 @@ class IncrementalATG(object):
         self,
         manage_root,
         impacted_environments,
-        envs_to_routines,
         envs_to_units,
         timeout,
+        baseline_iterations,
+        final_tst_path,
     ):
         # Path to the root of the Manage project
         self.manage_root = manage_root
@@ -42,10 +44,7 @@ class IncrementalATG(object):
         # The set of environments to run
         self.impacted_environments = impacted_environments
 
-        # Mapping from environments to the routines in them
-        self.envs_to_routines = envs_to_routines
-
-        # Mapping from environments to TU names
+        # Mapping from environments to units and their functions
         self.envs_to_units = envs_to_units
 
         # Mapping from environments to generated .tst files
@@ -57,6 +56,18 @@ class IncrementalATG(object):
         # Number of seconds to perform ATG
         self.timeout = timeout
 
+        # Number of baseling iterations to perform?
+        self.baseline_iterations = baseline_iterations
+
+        # Where are the tsts going to go?
+        self.final_tst_path = final_tst_path
+
+        # Make our output path
+        if not os.path.exists(self.final_tst_path):
+            os.mkdir(self.final_tst_path)
+        elif not os.path.isdir(self.final_tst_path):
+            raise RuntimeError("your final path is a file")
+
         # Mutex to allow for threads to update class state
         self.mutex = multiprocessing.Lock()
 
@@ -64,7 +75,7 @@ class IncrementalATG(object):
         for env in self.impacted_environments:
             self.env_tsts[env] = {}
             self.merged_tsts[env] = {}
-
+            
         # When running in parallel, how many workers?
         self.worker_count = multiprocessing.cpu_count()
 
@@ -113,7 +124,7 @@ class IncrementalATG(object):
         # Return it
         return tu_path
 
-    def run_atg_one_routine(self, env_path, routine_name):
+    def run_atg_one_routine(self, env_path, src_file, routine_name):
         """
         Runs a single routine in an environment via ATG
         """
@@ -121,8 +132,11 @@ class IncrementalATG(object):
         # What's the name of this environment?
         env = os.path.basename(env_path)
 
+        # What's the unit name for the current subprogram?
+        unit = os.path.splitext(os.path.basename(src_file))[0]
+
         # What's the prefix of our all outputs?
-        output_prefix = os.path.join(env_path, "{:s}_{:s}".format(env, routine_name))
+        output_prefix = os.path.join(env_path, "{env:s}_{unit:s}_{routine:s}".format(env=env, unit=unit, routine=routine_name))
 
         # Where is ATG going to write its log to?
         log_file = "{:s}.log".format(output_prefix)
@@ -155,7 +169,7 @@ class IncrementalATG(object):
         edg_flags = self.get_edg_flags(env_path)
 
         # Find the TU path
-        tu_path = self.unit_to_tu_path(env_path, self.envs_to_units[env_path])
+        tu_path = self.unit_to_tu_path(env_path, src_file)
 
         # We expect the TU to exist and be a file
         assert os.path.exists(tu_path) and os.path.isfile(tu_path)
@@ -225,12 +239,12 @@ class IncrementalATG(object):
         self.mutex.acquire()
 
         # Update the shared state
-        self.env_tsts[env_path][routine_name] = tst_file
+        self.env_tsts[env_path][(unit, routine_name)] = tst_file
 
         # Release the lock
         self.mutex.release()
 
-    def run_routine_parallel(self, routine, routine_context):
+    def run_routine_parallel(self, routine, routine_contexts):
         """
         Given a routine and routine context, builds-up what is neccessary to
         call the routine via a parallel pool
@@ -242,13 +256,15 @@ class IncrementalATG(object):
         # We acutally call 'wrap_class_method', which 'unboxes' routine and
         # calls that
         #
-        execution_context = list(itertools.product([routine], routine_context))
+        execution_contexts = []
+        for routine_context in routine_contexts:
+            execution_contexts.append([routine] + [list(routine_context)])
 
         # Worker pooler
         pool = ThreadPool(self.worker_count)
 
         # Run the call method in parallel over the 'context'
-        pool.map(wrap_class_method, execution_context, chunksize=1)
+        pool.map(wrap_class_method, execution_contexts, chunksize=1)
 
         # Wait for all the workers
         pool.close()
@@ -256,25 +272,32 @@ class IncrementalATG(object):
         # Join all workers
         pool.join()
 
-    @log_entry_exit
+    @atg_misc.log_entry_exit
     def run_atg(self):
         """
         Runs ATG in parallel, with parallelism at the routine level
         """
 
         # Product of environments with routines in that environment
-        routine_context = []
+        routine_contexts = []
 
         # For each impacted environment ...
         for env in self.impacted_environments:
-            # ... calculate the product of the env name with each routine
-            routine_context.extend(itertools.product([env], self.envs_to_routines[env]))
+
+            # For each source file ...
+            for src_file in self.envs_to_units[env]:
+
+                # For each routine ...
+                for routine_name in self.envs_to_units[env][src_file]:
+
+                    # Store this combination
+                    routine_contexts.append((env, src_file, routine_name))
 
         # What Python routine do we want to call?
         routine = self.run_atg_one_routine
 
-        # Run this routine in parallel given the provided context
-        self.run_routine_parallel(routine, routine_context)
+        # Run this routine in parallel given the provided contexts
+        self.run_routine_parallel(routine, routine_contexts)
 
     def merge_one_environment(self, env_path):
         """
@@ -298,16 +321,19 @@ class IncrementalATG(object):
         with open(merged_tst, "w") as merged_fd:
 
             # For each routine we generated (or tried) to generate tests for
-            for routine in sorted(genenerated_tsts.keys()):
+            for generated_tst in sorted(genenerated_tsts.keys()):
 
                 # Find the name of the tst for this routine
-                routine_tst = genenerated_tsts[routine]
+                routine_tst = genenerated_tsts[generated_tst]
+
+                # Unpack our elements
+                source_name, routine_name = generated_tst
 
                 # Did we succeed or not?
                 succeeded = "succeeded" if routine_tst is not None else "failed"
 
                 # Write-out a message
-                msg = "-- ATG {:s} for {:s} --".format(succeeded, routine)
+                msg = "-- ATG {:s} for {:s} (in unit {:s}) --".format(succeeded, routine_name, source_name)
                 header = "-" * len(msg)
                 output = [header, msg, header]
                 for elem in output:
@@ -336,11 +362,57 @@ class IncrementalATG(object):
         build_dir = os.path.dirname(env_path)
         env_file = os.path.join(build_dir, "{:s}.env").format(env_name)
 
-        baseliner = Baseline(env_file=env_file, verbose=0)
-        baseliner.run(run_atg=False, atg_file=merged_tst_name)
+        baseliner = baseline_for_atg.Baseline(env_file=env_file, verbose=0)
+        baseliner.run(run_atg=False, atg_file=merged_tst_name, max_iter=self.baseline_iterations, copy_out_manage=False)
 
-    @log_entry_exit
-    def merge_tst(self):
+    def prune_and_merge_one_environment(self, env_path):
+        """
+        Given an environment path, baselines the environment
+        """
+        merged_tst_name = self.merged_tsts[env_path]
+
+        env_name = os.path.basename(env_path)
+        build_dir = os.path.dirname(env_path)
+
+        merged_atg_file = os.path.join(build_dir, baseline_for_atg.FILE_FINAL)
+        assert os.path.exists(merged_atg_file)
+
+        manage_build_dir = os.path.dirname(build_dir)
+        assert os.path.basename(manage_build_dir) == "build"
+
+        manage_project_dir = os.path.dirname(manage_build_dir)
+        manage_environment_dir = os.path.join(manage_project_dir, "environment")
+        assert os.path.exists(manage_environment_dir) and os.path.isdir(manage_environment_dir)
+
+        enviroment_artefacts = os.path.join(manage_environment_dir, env_name)
+        assert os.path.exists(enviroment_artefacts) and os.path.isdir(enviroment_artefacts)
+
+        existing_tst = os.path.join(enviroment_artefacts, "{env:s}.tst").format(env=env_name)
+        assert os.path.exists(existing_tst) and os.path.isfile(existing_tst)
+
+        no_atg_tst = os.path.join(build_dir, "no_atg.tst")
+        tst_edit_instance = tst_editor.TstFile(input_file=existing_tst, output_file=no_atg_tst)
+        match_all_subprograms = ".*"
+        match_atg_tests = "^TEST.NAME:.*ATG"
+        tst_edit_instance.remove(subprogram_regex=match_all_subprograms, re_pattern=match_atg_tests)
+
+        #
+        # TODO: this tst has two header blocks in it?
+        #
+        combined_atg_existing = os.path.join(build_dir, "combined_atg_existing.tst")
+        with open(combined_atg_existing, "w") as combined_atg_existing_fd:
+            combined_atg_existing_fd.write(open(no_atg_tst).read())
+            combined_atg_existing_fd.write(open(merged_atg_file).read())
+
+        final_folder = os.path.join(self.final_tst_path, env_name)
+        if not os.path.exists(final_folder) or not os.path.isdir(final_folder):
+            os.mkdir(final_folder)
+
+        final_tst = os.path.join(final_folder, "{:s}.tst".format(env_name))
+        shutil.copyfile(combined_atg_existing, final_tst)
+
+    @atg_misc.log_entry_exit
+    def merge_atg_routine_tst(self):
         """
         Merges the routine-level tst files into one big file, with parallelism
         at the environment level
@@ -358,7 +430,7 @@ class IncrementalATG(object):
         # Run this routine in parallel given the provided context
         self.run_routine_parallel(routine, routine_context)
 
-    @log_entry_exit
+    @atg_misc.log_entry_exit
     def baseline(self):
         """
         Performs baselining for each environment
@@ -372,6 +444,24 @@ class IncrementalATG(object):
 
         # What Python routine do we want to call?
         routine = self.baseline_one_environment
+
+        # Run this routine in parallel given the provided context
+        self.run_routine_parallel(routine, routine_context)
+
+    @atg_misc.log_entry_exit
+    def prune_and_merge(self):
+        """
+        Performs baselining for each environment
+        """
+
+        #
+        # We want to process each environment (needs to be in a list, to avoid
+        # unpacking the environment path into a list of strings)
+        #
+        routine_context = [[env] for env in self.env_tsts.keys()]
+
+        # What Python routine do we want to call?
+        routine = self.prune_and_merge_one_environment
 
         # Run this routine in parallel given the provided context
         self.run_routine_parallel(routine, routine_context)
@@ -391,10 +481,13 @@ class IncrementalATG(object):
         self.run_atg()
 
         # Merge the seperate .tsts
-        self.merge_tst()
+        self.merge_atg_routine_tst()
 
         # Run baselining + stripping
         self.baseline()
+
+        # Remove old ATG and merge with existing tests
+        self.prune_and_merge()
 
 
 # EOF

@@ -5,32 +5,62 @@ import sys
 
 from incremental_atg.discover import *
 from incremental_atg.incremental_atg import *
+import incremental_atg.misc as atg_misc
 
-
-def main():
+def do_s2n():
     # What's the path to our repo?
-    s2n_repo_path = os.path.abspath(os.path.expandvars("${HOME}/clones/s2n_vc/src/s2n"))
+    repo_path = os.path.abspath(os.path.expandvars("${HOME}/clones/vc/src/s2n"))
 
     # What's the path to our Manage root folder?
-    s2n_manage_path = os.path.abspath(os.path.expandvars("${HOME}/clones/s2n_vc/vcast"))
+    manage_path = os.path.abspath(os.path.expandvars("${HOME}/clones/vc/vcast"))
 
     # What's the path to root src tree?
-    s2n_src_path = os.path.dirname(s2n_repo_path)
+    src_path = os.path.dirname(repo_path)
 
     # Set the environment variable needed for the environments to build
-    os.environ["S2N_VC_SRC_PATH"] = s2n_src_path
+    os.environ["S2N_VC_SRC_PATH"] = src_path
 
     # What two shas do we want to analyse?
     current_sha = "c158f0c8cb190b5121702fbe0e2b16547c5b63b4"
     new_sha = "4caa406c233b57e6f0bb7d5a62c83aca237b7e31"
 
+    # How long for ATG?
+    timeout = 2
+
+    return repo_path, manage_path, current_sha, new_sha, timeout
+
+def do_atg_workflow():
+    # What's the path to our repo?
+    repo_path = os.path.abspath(os.path.expandvars("${HOME}/clones/atg_workflow_vc/src"))
+
+    # What's the path to our Manage root folder?
+    manage_path = os.path.abspath(os.path.expandvars("${HOME}/clones/atg_workflow_vc/vcast"))
+
+    # What's the path to our Manage root folder?
+    final_tst_path = os.path.abspath(os.path.expandvars("${HOME}/clones/atg_workflow_vc/vcast_generated"))
+    final_tst_path = os.path.join(manage_path, "atg_workflow_vc", "environment")
+
+    # Set the environment variable needed for the environments to build
+    os.environ["ATG_WORKFLOW_VC_SRC_PATH"] = repo_path
+
+    # What two shas do we want to analyse?
+    current_sha, new_sha = atg_misc.parse_git_for_hashes(repo_path)
+
+    # How long for ATG?
+    timeout = 2
+
+    return repo_path, manage_path, final_tst_path, current_sha, new_sha, timeout
+
+def main():
+    repo_path, manage_path, final_tst_path, current_sha, new_sha, timeout = do_atg_workflow()
+
     # Use our class to find the changed files for a given repo
-    dcf = DiscoverChangedFiles(s2n_repo_path)
+    dcf = DiscoverChangedFiles(repo_path)
 
     # Get the changed files between our two commits
     changed_files = dcf.get_changed_files(current_sha, new_sha)
 
-    debugging = False
+    debugging = True
 
     if debugging:
         for a_file in changed_files:
@@ -40,14 +70,11 @@ def main():
     # Use our class to find the relationship between files/VectorCAST
     # environments
     #
-    dmd = DiscoverManageDependencies(s2n_manage_path, s2n_repo_path)
+    dmd = DiscoverManageDependencies(manage_path, repo_path)
     dmd.calculate_deps()
 
     # Mapping from files to environments that use those files
     fnames_to_envs = dmd.fnames_to_envs
-
-    # Mapping from environments to the routines in those environments
-    envs_to_routines = dmd.envs_to_routines
 
     # Mapping from environments to the name of the unit for that environment
     envs_to_units = dmd.envs_to_units
@@ -60,6 +87,7 @@ def main():
     # files
     #
     changed_used_files = changed_files.intersection(dep_files)
+    print(changed_used_files)
 
     # Our set of impacted environments
     impacted_envs = set()
@@ -74,15 +102,15 @@ def main():
     for env in impacted_envs:
         print(env)
 
-    # How much time do we want to give ATG?
-    timeout = int(sys.argv[1])
-
     # Debug
     print("ATG will have {:d} seconds per routine".format(timeout))
 
-    # Create an incremental ATG objec
+    baseline_iterations = 1
+
+    # Create an incremental ATG object
     ia = IncrementalATG(
-        s2n_manage_path, impacted_envs, envs_to_routines, envs_to_units, timeout
+        manage_path, impacted_envs, envs_to_units, timeout, baseline_iterations,
+        final_tst_path
     )
 
     # Process our environments

@@ -42,6 +42,15 @@ class DiscoverChangedFiles(object):
             if diff.header.old_path != diff.header.new_path:
                 # TODO: need to handle this case
 
+                # Inside of a git diff, file moves start with 'a' (for old) and 'b'" for new
+                git_old_path = diff.header.old_path
+                old_leading_dir = git_old_path.split(os.path.sep, 1)[0]
+                assert old_leading_dir == "a"
+
+                git_new_path = diff.header.new_path
+                new_leading_dir, new_path = git_new_path.split(os.path.sep, 1)
+                assert new_leading_dir == "b"
+
                 #
                 # TODO: we need to flag to the user that the Manage project
                 # needs updating and things _will not work_ because the units
@@ -50,10 +59,11 @@ class DiscoverChangedFiles(object):
 
                 # Make it clear that this is further refined by interrogating Manage
 
-                pass
+            else:
+                new_path = diff.header.new_path
 
             # Currently, environments depend on the new files and the old files
-            changed_files.add(diff.header.new_path)
+            changed_files.add(new_path)
 
         # Return our set of changed files
         return changed_files
@@ -86,10 +96,7 @@ class DiscoverManageDependencies(object):
         # For each _file_, which environments depend on this file?
         self.fnames_to_envs = {}
 
-        # For each environment, which routines exist?
-        self.envs_to_routines = {}
-
-        # For each environment, what is the 'main' unit?
+        # For each environment, what are the units, and for those units, what are the routines?
         self.envs_to_units = {}
 
     def find_files(self, env_path):
@@ -130,37 +137,7 @@ class DiscoverManageDependencies(object):
                 # Store that this environment depends on this file
                 self.fnames_to_envs[rel_fname].add(env_path)
 
-    def find_routines(self, env_path):
-        """
-        Given an environment folder, finds the set of routines that exist in an
-        environment
-        """
-
-        # We do not expect to have already processed this environment
-        assert env_path not in self.envs_to_routines
-
-        # Initiatlise the dictionary to be an empty set
-        self.envs_to_routines[env_path] = set()
-
-        # Open-up a connection to 'cover.db'
-        conn = sqlite3.connect(os.path.join(env_path, "cover.db"))
-
-        # Grab a cursor
-        cursor = conn.cursor()
-
-        # Execute our query
-        for row in cursor.execute("select name from functions"):
-
-            # We've only selected one column, so we only expect one element
-            assert len(row) == 1
-
-            # Grab the routine name
-            routine_name = row[0]
-
-            # Store the routine in this environment
-            self.envs_to_routines[env_path].add(routine_name)
-
-    def find_tus(self, env_path):
+    def find_units_functions(self, env_path):
         """
         Given an environment folder, finds the name of the main unit
         """
@@ -174,23 +151,35 @@ class DiscoverManageDependencies(object):
         # Grab a cursor
         cursor = conn.cursor()
 
+        query = """
+SELECT source_files.path,
+       functions.name
+FROM   functions 
+       JOIN instrumented_files 
+         ON instrumented_files.id = functions.instrumented_file_id 
+       JOIN source_files 
+         ON source_files.id = instrumented_files.source_file_id; 
+""".strip()
+
         # Execute our query
-        rows = list(cursor.execute("select path from source_files"))
+        rows = cursor.execute(query)
 
-        # TODO: we only support environments with one unit!
-        assert len(rows) == 1
+        # Store our units
+        units_to_functions = {}
 
-        # Unpack our row
-        row = rows[0]
+        for row in rows:
+            # Get the source file name and the function name
+            source_file_path, function_name = row
 
-        # We've only selected one column, so we expect only one value
-        assert len(row) == 1
+            # Initialise the function dict
+            if source_file_path not in units_to_functions:
+                units_to_functions[source_file_path] = []
 
-        # Grab the path to the unit
-        unit_path = row[0]
+            # Store this function
+            units_to_functions[source_file_path].append(function_name)
 
-        # Store this against the environment
-        self.envs_to_units[env_path] = unit_path
+        # Store details for this env
+        self.envs_to_units[env_path] = units_to_functions
 
     def process_env(self, env_path):
         """
@@ -200,11 +189,8 @@ class DiscoverManageDependencies(object):
         # Calcuate the map between files and environments
         self.find_files(env_path)
 
-        # Calulate the map between environments and routines
-        self.find_routines(env_path)
-
         # Calulate the map between environments and TUs
-        self.find_tus(env_path)
+        self.find_units_functions(env_path)
 
     def find_envs(self):
         """
