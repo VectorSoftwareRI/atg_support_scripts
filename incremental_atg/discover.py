@@ -1,74 +1,9 @@
 #!/usr/bin/env python3
 
 import os
-import git
-import whatthepatch
 import sqlite3
 
 import incremental_atg.misc as atg_misc
-
-
-class DiscoverChangedFiles(object):
-    """
-    Class to return the list of file changes for a given repo
-    """
-
-    def __init__(self, repo_path):
-
-        # What's the path to the repo?
-        self.repo_path = repo_path
-
-        # Create our git class
-        self.repo = git.Repo(repo_path)
-
-    @atg_misc.log_entry_exit
-    def get_changed_files(self, current_sha, new_sha):
-        """
-        Given two git hashes, calculates the list of changed files
-        """
-
-        # Grab the raw git diff
-        diff_text = self.repo.git.diff(current_sha, new_sha)
-
-        # parse the diff
-        parsed_diff = whatthepatch.parse_patch(diff_text)
-
-        # our list of changed files
-        changed_files = set()
-
-        # Iterate over the diff -- one 'diff' per file
-        for diff in parsed_diff:
-
-            # Temporarily detect if the file has moved
-            if diff.header.old_path != diff.header.new_path:
-                # TODO: need to handle this case
-
-                # Inside of a git diff, file moves start with 'a' (for old) and 'b'" for new
-                git_old_path = diff.header.old_path
-                old_leading_dir = git_old_path.split(os.path.sep, 1)[0]
-                assert old_leading_dir == "a"
-
-                git_new_path = diff.header.new_path
-                new_leading_dir, new_path = git_new_path.split(os.path.sep, 1)
-                assert new_leading_dir == "b"
-
-                #
-                # TODO: we need to flag to the user that the Manage project
-                # needs updating and things _will not work_ because the units
-                # have moved
-                #
-
-                # Make it clear that this is further refined by interrogating Manage
-
-            else:
-                new_path = diff.header.new_path
-
-            # Currently, environments depend on the new files and the old files
-            changed_files.add(new_path)
-
-        # Return our set of changed files
-        return changed_files
-
 
 class DiscoverManageDependencies(object):
     """
@@ -213,15 +148,6 @@ FROM   functions
 
             # Process that environment
             self.process_env(env_path)
-
-
-def wrap_class_method(args):
-    """
-    You cannot pass a class method into pool.map -- so we use a helper function
-    to call our really class method
-    """
-    func, args = args
-    func(*args)
 
 
 # EOF

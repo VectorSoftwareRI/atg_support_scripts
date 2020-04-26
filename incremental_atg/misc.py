@@ -97,8 +97,21 @@ def run_cmd(cmd, cwd, environ=None, timeout=None, log_file_prefix=None):
 
     return stdout, stderr, process.returncode
 
+def wrap_class_method(args):
+    """
+    You cannot pass a class method into pool.map -- so we use a helper function
+    to call our really class method
+    """
+    func, args = args
+    func(*args)
+
 
 class ParallelExecutor(object):
+    """
+    Helper class that makes it easy to write other classes that can do things
+    in parallel
+    """
+
     def __init__(self):
         # When running in parallel, how many workers?
         self.worker_count = multiprocessing.cpu_count()
@@ -134,14 +147,6 @@ class ParallelExecutor(object):
         # Join all workers
         pool.join()
 
-
-def wrap_class_method(args):
-    """
-    You cannot pass a class method into pool.map -- so we use a helper function
-    to call our really class method
-    """
-    func, args = args
-    func(*args)
 
 
 # EOF

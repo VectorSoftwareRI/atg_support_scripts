@@ -6,6 +6,7 @@ import sys
 import incremental_atg.discover as atg_discover
 import incremental_atg.process_project as atg_processor
 import incremental_atg.misc as atg_misc
+import incremental_atg.scm_hooks as atg_scm_hooks
 
 def do_s2n():
     # What's the path to our repo?
@@ -53,6 +54,13 @@ def do_atg_workflow():
 
 def main():
     repo_path, manage_path, final_tst_path, current_sha, new_sha, timeout = do_atg_workflow()
+
+    git_analysis = atg_scm_hooks.GitImpactedObjectFinder(repo_path)
+    git_analysis.calculate_preserved_files(current_sha, new_sha)
+
+
+    import sys
+    sys.exit(-1)
 
     # Use our class to find the changed files for a given repo
     dcf = atg_discover.DiscoverChangedFiles(repo_path)
