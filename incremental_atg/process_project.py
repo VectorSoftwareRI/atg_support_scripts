@@ -3,7 +3,6 @@
 import os
 import subprocess
 import monotonic
-import sys
 import shutil
 
 import incremental_atg.baseline_for_atg as baseline_for_atg
@@ -339,7 +338,7 @@ class ProcessProject(atg_misc.ParallelExecutor):
         env_name = os.path.basename(env_path)
         build_dir = os.path.dirname(env_path)
 
-        merged_atg_file = os.path.join(build_dir, baseline_for_atg.FILE_FINAL)
+        merged_atg_file = os.path.join(build_dir, merged_tst_name)
         assert os.path.exists(merged_atg_file)
 
         manage_build_dir = os.path.dirname(build_dir)
@@ -397,7 +396,7 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # We want to process each environment (needs to be in a list, to avoid
         # unpacking the environment path into a list of strings)
         #
-        routine_context = [[env] for env in self.env_tsts.keys()]
+        routine_context = [[env] for env in self.env_tsts]
 
         # What Python routine do we want to call?
         routine = self.merge_one_environment
@@ -415,7 +414,7 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # We want to process each environment (needs to be in a list, to avoid
         # unpacking the environment path into a list of strings)
         #
-        routine_context = [[env] for env in self.env_tsts.keys()]
+        routine_context = [[env] for env in self.env_tsts]
 
         # What Python routine do we want to call?
         routine = self.baseline_one_environment
@@ -433,7 +432,7 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # We want to process each environment (needs to be in a list, to avoid
         # unpacking the environment path into a list of strings)
         #
-        routine_context = [[env] for env in self.env_tsts.keys()]
+        routine_context = [[env] for env in self.env_tsts]
 
         # What Python routine do we want to call?
         routine = self.prune_and_merge_one_environment

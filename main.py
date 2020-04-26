@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 
 import incremental_atg.discover as atg_discover
 import incremental_atg.process_project as atg_processor
@@ -71,6 +70,13 @@ def do_atg_workflow():
 
 
 def main():
+    process_s2n = False
+
+    if process_s2n:
+        args = do_s2n()
+    else:
+        args = do_atg_workflow()
+
     (
         repository_path,
         manage_vcm_path,
@@ -78,7 +84,7 @@ def main():
         current_sha,
         new_sha,
         timeout,
-    ) = do_s2n()  # do_atg_workflow()
+    ) = args
 
     git_analysis = atg_scm_hooks.GitImpactedObjectFinder(repository_path)
     preserved_files = git_analysis.calculate_preserved_files(current_sha, new_sha)

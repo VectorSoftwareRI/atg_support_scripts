@@ -73,7 +73,7 @@ def main():
     input_file, output_file, subprograms_str, pattern = sys.argv[1:]
 
     tst_file = TstFile(input_file, output_file)
-    tst_file.remove(subprograms, pattern)
+    tst_file.remove(subprograms_str, pattern)
 
 
 if __name__ == "__main__":

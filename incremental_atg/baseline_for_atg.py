@@ -2,7 +2,6 @@
 
 import os
 import shutil
-import sys
 import subprocess
 import filecmp
 import incremental_atg.merge_display_attributes as atg_merge_attrs
@@ -208,9 +207,12 @@ def get_env_file():
     """
     Finds the first .env file in the current directory
     """
+    env_file = None
     for f in os.listdir("."):
         if f.endswith(ENV_EXT):
-            return f
+            env_file = f
+    assert env_file is not None
+    return env_file
 
 
 def main():

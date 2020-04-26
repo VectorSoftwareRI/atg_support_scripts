@@ -3,7 +3,6 @@
 import os
 import shutil
 import tempfile
-import subprocess
 
 import incremental_atg.misc as atg_misc
 
@@ -51,9 +50,9 @@ class ManageBuilder(atg_misc.ParallelExecutor):
                     raise RuntimeError(
                         "{:s} already exists, not proceeding".format(self.build_folder)
                     )
-                else:
-                    # Otherwise, remove the build folder
-                    shutil.rmtree(self.build_folder)
+
+                # Otherwise, remove the build folder
+                shutil.rmtree(self.build_folder)
 
         # What's our project name?
         self.project_name = os.path.splitext(os.path.basename(self.manage_vcm_path))[0]
