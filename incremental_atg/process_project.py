@@ -11,7 +11,7 @@ import incremental_atg.misc as atg_misc
 import incremental_atg.tst_editor as tst_editor
 
 
-class ProcessProject(object):
+class ProcessProject(atg_misc.ParallelExecutor):
     """
     Given a Manage project and a set of environments, re-runs the "impacted"
     environments/routines
@@ -19,15 +19,14 @@ class ProcessProject(object):
 
     def __init__(
         self,
-        manage_root,
         impacted_environments,
         envs_to_units,
         timeout,
         baseline_iterations,
         final_tst_path,
     ):
-        # Path to the root of the Manage project
-        self.manage_root = manage_root
+        # Call the super constructor
+        super().__init__()
 
         # The set of environments to run
         self.impacted_environments = impacted_environments

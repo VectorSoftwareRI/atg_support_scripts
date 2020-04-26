@@ -97,6 +97,7 @@ def run_cmd(cmd, cwd, environ=None, timeout=None, log_file_prefix=None):
 
     return stdout, stderr, process.returncode
 
+
 def wrap_class_method(args):
     """
     You cannot pass a class method into pool.map -- so we use a helper function
@@ -146,7 +147,6 @@ class ParallelExecutor(object):
 
         # Join all workers
         pool.join()
-
 
 
 # EOF

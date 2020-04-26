@@ -2,10 +2,12 @@
 
 import os
 import sqlite3
+import xmltodict
 
 import incremental_atg.misc as atg_misc
 
-class DiscoverManageDependencies(object):
+
+class DiscoverManageDependencies(atg_misc.ParallelExecutor):
     """
     Helper class to help identify:
 
@@ -13,24 +15,25 @@ class DiscoverManageDependencies(object):
 
         * The unit names for each environment
 
-            + Currently only one unit per env
-
-        * The routines for each environment
+        * The routines for each unit (in each environment)
     """
 
-    def __init__(self, project_root, repo_root):
+    def __init__(self, repository_prefix, environments):
 
-        # Where's the starting point of our Manage project?
-        self.project_root = project_root
+        # Call the super constructor
+        super().__init__()
 
-        # What's the top-level of our source repo
-        self.repo_root = repo_root
+        # What's the directory that contains our source files?
+        self.repository_prefix = repository_prefix
 
-        # The set of discovered environments
-        self.environments = set()
+        # What are our environments?
+        self.environments = environments
 
         # For each _file_, which environments depend on this file?
         self.fnames_to_envs = {}
+
+        # For each environment, which files are used in this environment?
+        self.envs_to_fnames = {}
 
         # For each environment, what are the units, and for those units, what are the routines?
         self.envs_to_units = {}
@@ -41,37 +44,46 @@ class DiscoverManageDependencies(object):
         depends on
         """
 
-        # Create a connection to 'master.db'
-        conn = sqlite3.connect(os.path.join(env_path, "master.db"))
+        # Open-up the dependencies XML
+        xml_path = os.path.join(env_path, "include_dependencies.xml")
 
-        # Grab a cursor
-        cursor = conn.cursor()
+        # Parse it
+        parsed = xmltodict.parse(open(xml_path).read(), force_list=["unit", "file"])
 
-        # Our query
-        for row in cursor.execute("select path from sourcefiles"):
+        # For each unit
+        for val in parsed["includedeps"]["unit"]:
 
-            # We expect one element per row (as per the select)
-            assert len(row) == 1
+            # If we don't have a 'file' attribute, then we can skip it
+            if "file" not in val:
+                continue
 
-            # What's the file name?
-            fname = row[0]
+            # Otherwise, walk each dependency file
+            for dependency in val["file"]:
 
-            # Does the file path originate from our repository?
-            if fname.startswith(self.repo_root):
+                # Get the filename?
+                fname = dependency["#text"]
 
-                #
-                # Obtain a _relative_ name -- this allows us to match to the
-                # git diff!
-                #
-                rel_fname = os.path.relpath(fname, self.repo_root)
+                # Does the file path originate from our repository?
+                if fname.startswith(self.repository_prefix):
 
-                # If we haven't seen this file name before ...
-                if rel_fname not in self.fnames_to_envs:
-                    # ... initialise the dictionary
-                    self.fnames_to_envs[rel_fname] = set()
+                    #
+                    # Obtain a _relative_ name -- this allows us to match to the
+                    # git diff!
+                    #
+                    rel_fname = os.path.relpath(fname, self.repository_prefix)
 
-                # Store that this environment depends on this file
-                self.fnames_to_envs[rel_fname].add(env_path)
+                    # If we haven't seen this file name before ...
+                    if rel_fname not in self.fnames_to_envs:
+                        # ... initialise the dictionary
+                        self.fnames_to_envs[rel_fname] = set()
+
+                    # Store that this environment depends on this file
+                    self.fnames_to_envs[rel_fname].add(env_path)
+
+                    if env_path not in self.envs_to_fnames:
+                        self.envs_to_fnames[env_path] = set()
+
+                    self.envs_to_fnames[env_path].add(rel_fname)
 
     def find_units_functions(self, env_path):
         """
@@ -129,13 +141,12 @@ FROM   functions
         self.find_units_functions(env_path)
 
     @atg_misc.log_entry_exit
-    def calculate_deps(self):
+    def process(self):
         """
         Calculates the 'interesting information' for a given Manage project
         """
 
-        # Find all of the environments
-        self.find_envs()
+        execution_context = []
 
         # For each environment/build directory
         for env_name, build_dir in self.environments:
@@ -146,8 +157,9 @@ FROM   functions
             # We expect that this environment has been built!
             assert os.path.exists(env_path) and os.path.isdir(env_path)
 
-            # Process that environment
-            self.process_env(env_path)
+            execution_context.append([env_path])
+
+        self.run_routine_parallel(self.process_env, execution_context)
 
 
 # EOF

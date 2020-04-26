@@ -9,7 +9,7 @@ import incremental_atg.misc as atg_misc
 
 
 class ManageBuilder(atg_misc.ParallelExecutor):
-    def __init__(self, manage_vcm_path, cleanup=False):
+    def __init__(self, manage_vcm_path, cleanup=False, skip_build=False):
 
         # Call the super constructor
         super().__init__()
@@ -36,17 +36,24 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         # What's the name of the build folder?
         self.build_folder = os.path.join(self.manage_root_dir, "build")
 
-        # We do not expect to see a build folder!
-        if os.path.exists(self.build_folder) or os.path.isdir(self.build_folder):
+        # Should we skip doing the build?
+        self.skip_build = skip_build
 
-            # If we haven't asked to do clean-up, then we error-out
-            if not cleanup:
-                raise RuntimeError(
-                    "{:s} already exists, not proceeding".format(self.build_folder)
-                )
-            else:
-                # Otherwise, remove the build folder
-                shutil.rmtree(self.build_folder)
+        if self.skip_build:
+            assert not cleanup
+            assert os.path.isdir(self.build_folder)
+        else:
+            # We do not expect to see a build folder!
+            if os.path.exists(self.build_folder) or os.path.isdir(self.build_folder):
+
+                # If we haven't asked to do clean-up, then we error-out
+                if not cleanup:
+                    raise RuntimeError(
+                        "{:s} already exists, not proceeding".format(self.build_folder)
+                    )
+                else:
+                    # Otherwise, remove the build folder
+                    shutil.rmtree(self.build_folder)
 
         # What's our project name?
         self.project_name = os.path.splitext(os.path.basename(self.manage_vcm_path))[0]
@@ -157,34 +164,41 @@ class ManageBuilder(atg_misc.ParallelExecutor):
                         # If we have 'CCAST_.CFG', store this folder
                         self.environments.add((env_name, build_dir))
 
+    @atg_misc.log_entry_exit
+    def build_environments(self):
+        # Build the environments in parallel
+        self.run_routine_parallel(self.build_env, self.environments)
+
     def process(self):
         """
         Processes the Manage project
         """
 
-        # Get a temporary file with a Python suffix
-        with tempfile.NamedTemporaryFile(suffix=".py") as temp_file:
+        if not self.skip_build:
+            # Get a temporary file with a Python suffix
+            with tempfile.NamedTemporaryFile(suffix=".py") as temp_file:
 
-            # Full path
-            full_temp_file = temp_file.name
+                # Full path
+                full_temp_file = temp_file.name
 
-            # Basename
-            basename = os.path.basename(full_temp_file)
+                # Basename
+                basename = os.path.basename(full_temp_file)
 
-            # Add the script
-            self.add_script(full_temp_file, basename)
+                # Add the script
+                self.add_script(full_temp_file, basename)
 
-            # Populate Manage's build folder
-            self.populate_build_folder()
+                # Populate Manage's build folder
+                self.populate_build_folder()
 
-            # Remove the script
-            self.remove_script(basename)
+                # Remove the script
+                self.remove_script(basename)
 
         # Find all of the build environments (starting from our Manage project root)
         self.discover_environments()
 
-        # Build the environments in parallel
-        self.run_routine_parallel(self.build_env, self.environments)
+        if not self.skip_build:
+            # Build all found environments
+            self.build_environments()
 
     def build_env(self, env_name, env_location):
         """

@@ -7,6 +7,8 @@ import incremental_atg.discover as atg_discover
 import incremental_atg.process_project as atg_processor
 import incremental_atg.misc as atg_misc
 import incremental_atg.scm_hooks as atg_scm_hooks
+import incremental_atg.build_manage as build_manage
+
 
 def do_s2n():
     # What's the path to our repo?
@@ -30,15 +32,24 @@ def do_s2n():
 
     return repo_path, manage_path, current_sha, new_sha, timeout
 
+
 def do_atg_workflow():
     # What's the path to our repo?
-    repo_path = os.path.abspath(os.path.expandvars("${HOME}/clones/atg_workflow_vc/src"))
+    repo_path = os.path.abspath(
+        os.path.expandvars("${HOME}/clones/atg_workflow_vc/src")
+    )
+
+    # What's the path to our Manage vcm file?
+    vcm_path = os.path.abspath(
+        os.path.expandvars("${HOME}/clones/atg_workflow_vc/vcast/atg_workflow_vc.vcm")
+    )
+
+    manage_path = os.path.dirname(vcm_path)
 
     # What's the path to our Manage root folder?
-    manage_path = os.path.abspath(os.path.expandvars("${HOME}/clones/atg_workflow_vc/vcast"))
-
-    # What's the path to our Manage root folder?
-    final_tst_path = os.path.abspath(os.path.expandvars("${HOME}/clones/atg_workflow_vc/vcast_generated"))
+    final_tst_path = os.path.abspath(
+        os.path.expandvars("${HOME}/clones/atg_workflow_vc/vcast_generated")
+    )
     final_tst_path = os.path.join(manage_path, "atg_workflow_vc", "environment")
 
     # Set the environment variable needed for the environments to build
@@ -50,60 +61,40 @@ def do_atg_workflow():
     # How long for ATG?
     timeout = 2
 
-    return repo_path, manage_path, final_tst_path, current_sha, new_sha, timeout
+    return repo_path, vcm_path, final_tst_path, current_sha, new_sha, timeout
+
 
 def main():
-    repo_path, manage_path, final_tst_path, current_sha, new_sha, timeout = do_atg_workflow()
+    (
+        repository_path,
+        manage_vcm_path,
+        final_tst_path,
+        current_sha,
+        new_sha,
+        timeout,
+    ) = do_atg_workflow()
 
-    git_analysis = atg_scm_hooks.GitImpactedObjectFinder(repo_path)
-    git_analysis.calculate_preserved_files(current_sha, new_sha)
+    git_analysis = atg_scm_hooks.GitImpactedObjectFinder(repository_path)
+    preserved_files = git_analysis.calculate_preserved_files(current_sha, new_sha)
 
+    manage_builder = build_manage.ManageBuilder(manage_vcm_path, skip_build=True)
+    manage_builder.process()
 
-    import sys
-    sys.exit(-1)
-
-    # Use our class to find the changed files for a given repo
-    dcf = atg_discover.DiscoverChangedFiles(repo_path)
-
-    # Get the changed files between our two commits
-    changed_files = dcf.get_changed_files(current_sha, new_sha)
-
-    debugging = True
-
-    if debugging:
-        for a_file in changed_files:
-            print(a_file)
-
-    #
-    # Use our class to find the relationship between files/VectorCAST
-    # environments
-    #
-    dmd = atg_discover.DiscoverManageDependencies(manage_path, repo_path)
-    dmd.calculate_deps()
+    manage_dependencies = atg_discover.DiscoverManageDependencies(
+        repository_path, manage_builder.environments
+    )
+    manage_dependencies.process()
 
     # Mapping from files to environments that use those files
-    fnames_to_envs = dmd.fnames_to_envs
-
-    # Mapping from environments to the name of the unit for that environment
-    envs_to_units = dmd.envs_to_units
-
-    # Find all of the used files across the whole of the Manage project
-    dep_files = set(fnames_to_envs.keys())
-
-    #
-    # Calculate the intersection between the _used_ files and the _changed_
-    # files
-    #
-    changed_used_files = changed_files.intersection(dep_files)
-    print(changed_used_files)
+    envs_to_fnames = manage_dependencies.envs_to_fnames
 
     # Our set of impacted environments
     impacted_envs = set()
 
-    # For each _used and changed_ file ...
-    for changed_file in changed_used_files:
-        # ... we want to process the environments using those files
-        impacted_envs.update(fnames_to_envs[changed_file])
+    for environment, dependencies in envs_to_fnames.items():
+        uses_only_preserved_files = dependencies.issubset(preserved_files)
+        if not uses_only_preserved_files:
+            impacted_envs.add(environment)
 
     # Debug: show the environments we're going to process
     print("Envs to process:")
@@ -117,8 +108,11 @@ def main():
 
     # Create an incremental ATG object
     ia = atg_processor.ProcessProject(
-        manage_path, impacted_envs, envs_to_units, timeout, baseline_iterations,
-        final_tst_path
+        impacted_envs,
+        manage_dependencies.envs_to_units,
+        timeout,
+        baseline_iterations,
+        final_tst_path,
     )
 
     # Process our environments
