@@ -35,7 +35,7 @@ def do_s2n():
     new_sha = "4caa406c233b57e6f0bb7d5a62c83aca237b7e31"
 
     # How long for ATG?
-    timeout = 2
+    timeout = 1
 
     return repo_path, vcm_path, final_tst_path, current_sha, new_sha, timeout
 
@@ -70,7 +70,7 @@ def do_atg_workflow():
 
 
 def main():
-    process_s2n = False
+    process_s2n = True
 
     if process_s2n:
         args = do_s2n()

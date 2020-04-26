@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import subprocess
 import monotonic
 import shutil
 
@@ -166,55 +165,8 @@ class ProcessProject(atg_misc.ParallelExecutor):
             )
         )
 
-        # What options to do we want to pass to subprocess?
-        kwargs = {
-            "stdout": subprocess.PIPE,
-            "stderr": subprocess.PIPE,
-            "universal_newlines": True,
-            "shell": True,
-            "cwd": env_path,
-            "env": environ,
-        }
-
-        # Start a timer
-        start = monotonic.monotonic()
-
-        # Start the process
-        with subprocess.Popen(cmd, **kwargs) as process:
-            try:
-                # Communicate with timeout
-                stdout, stderr = process.communicate(timeout=self.timeout)
-            except subprocess.TimeoutExpired:
-                # If our timeout expires ...
-
-                # Kill the process
-                process.kill()
-
-                # Grab the output
-                stdout, stderr = process.communicate()
-
-        # End the clock
-        end = monotonic.monotonic()
-
-        # Calculate the duration
-        elapsed_time = end - start
-
-        # Write the duration to the log
-        stdout += "Elapsed seconds: {:.2f}\n".format(elapsed_time)
-
-        # What's the return code?
-        returncode = process.returncode
-
-        # Write the return code to the log
-        stdout += "Return code: {retcode}\n".format(retcode=returncode)
-
-        # Write stdout to a file
-        with open(out_file, "w") as output:
-            output.write(stdout)
-
-        # Write stder to a file
-        with open(err_file, "w") as output:
-            output.write(stderr)
+        # Run PyEDG and get the return code
+        _, _, returncode = atg_misc.run_cmd(cmd, cwd=env_path, environ=environ, timeout=self.timeout)
 
         # If we didn't have a 0 return code, we have no tst file
         if returncode:
@@ -327,12 +279,10 @@ class ProcessProject(atg_misc.ParallelExecutor):
         """
         Given an environment path, baselines the environment
         """
-        merged_tst_name = self.merged_tsts[env_path]
-
         env_name = os.path.basename(env_path)
         build_dir = os.path.dirname(env_path)
 
-        merged_atg_file = os.path.join(build_dir, merged_tst_name)
+        merged_atg_file = os.path.join(build_dir, baseline_for_atg.FILE_FINAL)
         assert os.path.exists(merged_atg_file)
 
         manage_build_dir = os.path.dirname(build_dir)

@@ -19,25 +19,18 @@ def log_entry_exit(wrapped, _, args, kwargs):
 def parse_git_for_hashes(repo="."):
     # Hack to calculate the current and previous git hash
     cmd = shlex.split("git log --pretty=oneline --abbrev-commit")
-    p = subprocess.Popen(
-        cmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        cwd=repo,
-    )
-    output = p.communicate()[0]
+    output, _, _ = run_cmd(cmd, cwd=repo, shell=False)
     lines = output.splitlines()
     assert len(lines) > 1
 
     # Bytes-like object!
-    branch_sha = str(str(lines[0]).split(" ")[0])[2:]
-    head_sha = str(str(lines[1]).split(" ")[0])[2:]
+    branch_sha = lines[0].split(" ")[0]
+    head_sha = lines[1].split(" ")[0]
 
     return (head_sha, branch_sha)
 
 
-def run_cmd(cmd, cwd, environ=None, timeout=None, log_file_prefix=None):
+def run_cmd(cmd, cwd, environ=None, timeout=None, log_file_prefix=None, shell=True):
 
     if not environ:
         environ = os.environ.copy()
@@ -46,8 +39,8 @@ def run_cmd(cmd, cwd, environ=None, timeout=None, log_file_prefix=None):
     kwargs = {
         "stdout": subprocess.PIPE,
         "stderr": subprocess.PIPE,
+        "shell": shell,
         "universal_newlines": True,
-        "shell": True,
         "cwd": cwd,
         "env": environ,
     }

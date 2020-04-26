@@ -2,9 +2,9 @@
 
 import os
 import shutil
-import subprocess
 import filecmp
 import incremental_atg.merge_display_attributes as atg_merge_attrs
+import incremental_atg.misc as atg_misc
 
 FILE_BL = "bl.tst"
 FILE_ATG = "atg.tst"
@@ -56,28 +56,14 @@ class Baseline:
         if not label:
             label = os.path.basename(cmd[0])
 
+        # What's the count for this command?
         ccount = self.get_incr_call_count(label)
 
-        output_file = os.path.join(
-            self.workdir, "{:s}_out_{:d}.log".format(label, ccount)
-        )
-        err_file = os.path.join(self.workdir, "{:s}_err_{:d}.log".format(label, ccount))
+        # What's the log name?
+        log_file_prefix = os.path.join(self.workdir, "{:s}_out_{:d}".format(label, ccount))
 
-        kwargs = {
-            "stdout": subprocess.PIPE,
-            "stderr": subprocess.PIPE,
-            "universal_newlines": True,
-            "cwd": self.workdir,
-        }
-
-        with subprocess.Popen(cmd, **kwargs) as process:
-            stdout, stderr = process.communicate()
-
-        with open(output_file, "w") as output:
-            output.write(stdout)
-
-        with open(err_file, "w") as output:
-            output.write(stderr)
+        # Run the command
+        atg_misc.run_cmd(cmd, cwd=self.workdir, log_file_prefix=log_file_prefix, shell=False)
 
     def merge_attributes(self, atg_file):
         file_bl = os.path.join(self.workdir, FILE_BL)
