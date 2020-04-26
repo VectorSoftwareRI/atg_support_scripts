@@ -5,7 +5,7 @@ import shutil
 import sys
 import subprocess
 import filecmp
-from incremental_atg.merge_display_attributes import *
+import incremental_atg.merge_display_attributes as atg_merge_attrs
 
 FILE_BL = "bl.tst"
 FILE_ATG = "atg.tst"
@@ -84,7 +84,7 @@ class Baseline:
         file_bl = os.path.join(self.workdir, FILE_BL)
         file_atg = os.path.join(self.workdir, atg_file)
         file_merged = os.path.join(self.workdir, FILE_MERGED)
-        MergeDisplayAttributes.merge(file_bl, file_atg, file_merged)
+        atg_merge_attrs.MergeDisplayAttributes.merge(file_bl, file_atg, file_merged)
 
     def strip_failures(self, file_1, file_2):
         vpython = os.path.join(VC_PATH, "vpython")

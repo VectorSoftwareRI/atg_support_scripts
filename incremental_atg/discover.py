@@ -5,7 +5,7 @@ import git
 import whatthepatch
 import sqlite3
 
-from incremental_atg.misc import *
+import incremental_atg.misc as atg_misc
 
 class DiscoverChangedFiles(object):
     """
@@ -20,7 +20,7 @@ class DiscoverChangedFiles(object):
         # Create our git class
         self.repo = git.Repo(repo_path)
 
-    @log_entry_exit
+    @atg_misc.log_entry_exit
     def get_changed_files(self, current_sha, new_sha):
         """
         Given two git hashes, calculates the list of changed files
@@ -225,7 +225,7 @@ FROM   functions
                         # If we have 'CCAST_.CFG', store this folder
                         self.environments.add((env_name, build_dir))
 
-    @log_entry_exit
+    @atg_misc.log_entry_exit
     def calculate_deps(self):
         """
         Calculates the 'interesting information' for a given Manage project
