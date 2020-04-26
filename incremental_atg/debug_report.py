@@ -5,14 +5,13 @@ def debug_report(
     repository_path,
     current_sha,
     new_sha,
-    git_analysis,
+    scm_analyser,
     preserved_files,
     limit_unchanged,
     manage_vcm_path,
     manage_builder,
     manage_dependencies,
     impacted_envs,
-    envs_to_fnames,
 ):
 
     print("#" * 80)
@@ -23,12 +22,12 @@ def debug_report(
     )
     print(
         "   There were {total:d} total files".format(
-            total=len(git_analysis._find_all_files())
+            total=len(scm_analyser._find_all_files())
         )
     )
     print(
         "   There were {changed:d} changed files".format(
-            changed=len(git_analysis._find_changed_files(current_sha, new_sha))
+            changed=len(scm_analyser._find_changed_files(current_sha, new_sha))
         )
     )
     print(
@@ -80,7 +79,7 @@ def debug_report(
     print("After processing the changes, we will re-run these environments")
     for env_path in impacted_envs:
         env = os.path.basename(env_path)
-        used_files = envs_to_fnames[env_path]
+        used_files = manage_dependencies.envs_to_fnames[env_path]
         impacted_deps = used_files - preserved_files
         units = manage_dependencies.envs_to_units[env_path]
         rout_count = 0
