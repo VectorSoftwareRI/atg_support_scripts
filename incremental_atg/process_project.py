@@ -166,7 +166,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
         )
 
         # Run PyEDG and get the return code
-        _, _, returncode = atg_misc.run_cmd(cmd, cwd=env_path, environ=environ, timeout=self.timeout)
+        _, _, returncode = atg_misc.run_cmd(
+            cmd, cwd=env_path, environ=environ, timeout=self.timeout
+        )
 
         # If we didn't have a 0 return code, we have no tst file
         if returncode:

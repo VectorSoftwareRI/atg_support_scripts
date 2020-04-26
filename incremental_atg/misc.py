@@ -10,9 +10,9 @@ from contextlib import contextmanager
 
 @wrapt.decorator
 def log_entry_exit(wrapped, _, args, kwargs):
-    print("Enter {:s} ...".format(wrapped.__name__), flush=True, end=" ")
+    # print("Enter {:s} ...".format(wrapped.__name__), flush=True, end=" ")
     result = wrapped(*args, **kwargs)
-    print("Done!", flush=True)
+    # print("Done!", flush=True)
     return result
 
 

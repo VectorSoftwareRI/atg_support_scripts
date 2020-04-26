@@ -60,10 +60,14 @@ class Baseline:
         ccount = self.get_incr_call_count(label)
 
         # What's the log name?
-        log_file_prefix = os.path.join(self.workdir, "{:s}_out_{:d}".format(label, ccount))
+        log_file_prefix = os.path.join(
+            self.workdir, "{:s}_out_{:d}".format(label, ccount)
+        )
 
         # Run the command
-        atg_misc.run_cmd(cmd, cwd=self.workdir, log_file_prefix=log_file_prefix, shell=False)
+        atg_misc.run_cmd(
+            cmd, cwd=self.workdir, log_file_prefix=log_file_prefix, shell=False
+        )
 
     def merge_attributes(self, atg_file):
         file_bl = os.path.join(self.workdir, FILE_BL)

@@ -7,6 +7,7 @@ import incremental_atg.process_project as atg_processor
 import incremental_atg.misc as atg_misc
 import incremental_atg.scm_hooks as atg_scm_hooks
 import incremental_atg.build_manage as build_manage
+import incremental_atg.debug_report as atg_debug_report
 
 
 def do_s2n():
@@ -34,10 +35,7 @@ def do_s2n():
     current_sha = "c158f0c8cb190b5121702fbe0e2b16547c5b63b4"
     new_sha = "4caa406c233b57e6f0bb7d5a62c83aca237b7e31"
 
-    # How long for ATG?
-    timeout = 1
-
-    return repo_path, vcm_path, final_tst_path, current_sha, new_sha, timeout
+    return repo_path, vcm_path, final_tst_path, current_sha, new_sha
 
 
 def do_atg_workflow():
@@ -63,33 +61,32 @@ def do_atg_workflow():
     # What two shas do we want to analyse?
     current_sha, new_sha = atg_misc.parse_git_for_hashes(repo_path)
 
-    # How long for ATG?
-    timeout = 2
-
-    return repo_path, vcm_path, final_tst_path, current_sha, new_sha, timeout
+    return repo_path, vcm_path, final_tst_path, current_sha, new_sha
 
 
 def main():
-    process_s2n = True
+    process_s2n = False
 
     if process_s2n:
         args = do_s2n()
     else:
         args = do_atg_workflow()
 
-    (
-        repository_path,
-        manage_vcm_path,
-        final_tst_path,
-        current_sha,
-        new_sha,
-        timeout,
-    ) = args
+    (repository_path, manage_vcm_path, final_tst_path, current_sha, new_sha,) = args
+
+    timeout = 1
+    verbose = True
+    baseline_iterations = 1
+    cleanup = False
+    skip_build = True
+    limit_unchanged = 100
 
     git_analysis = atg_scm_hooks.GitImpactedObjectFinder(repository_path)
     preserved_files = git_analysis.calculate_preserved_files(current_sha, new_sha)
 
-    manage_builder = build_manage.ManageBuilder(manage_vcm_path, cleanup=True)
+    manage_builder = build_manage.ManageBuilder(
+        manage_vcm_path, cleanup=cleanup, skip_build=skip_build
+    )
     manage_builder.process()
 
     manage_dependencies = atg_discover.DiscoverManageDependencies(
@@ -108,15 +105,24 @@ def main():
         if not uses_only_preserved_files:
             impacted_envs.add(environment)
 
-    # Debug: show the environments we're going to process
-    print("Envs to process:")
-    for env in impacted_envs:
-        print(env)
+    if verbose:
+        atg_debug_report.debug_report(
+            repository_path,
+            current_sha,
+            new_sha,
+            git_analysis,
+            preserved_files,
+            limit_unchanged,
+            manage_vcm_path,
+            manage_builder,
+            manage_dependencies,
+            impacted_envs,
+            envs_to_fnames,
+        )
 
-    # Debug
-    print("ATG will have {:d} seconds per routine".format(timeout))
+    import sys
 
-    baseline_iterations = 1
+    sys.exit(-1)
 
     # Create an incremental ATG object
     ia = atg_processor.ProcessProject(
