@@ -1,0 +1,6 @@
+timeout = 2
+dry_run = True
+baseline_iterations = 1
+cleanup = False
+skip_build = True
+limit_unchanged = 100

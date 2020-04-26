@@ -2,23 +2,26 @@ import os
 
 import incremental_atg.scm_hooks as atg_scm_hooks
 
-def get_configuration_object():
+
+def get_configuration():
     # What's the path to our repo?
-    repo_path = os.path.abspath(os.path.expandvars("${HOME}/clones/s2n_vc/src/s2n"))
+    repository_path = os.path.abspath(
+        os.path.expandvars("${HOME}/clones/s2n_vc/src/s2n")
+    )
 
     # What's the path to our Manage root folder?
-    vcm_path = os.path.abspath(
+    manage_vcm_path = os.path.abspath(
         os.path.expandvars("${HOME}/clones/s2n_vc/vcast/s2n_vc.vcm")
     )
 
     # Path to the Manage artefacts
-    manage_path = os.path.splitext(vcm_path)[0]
+    manage_path = os.path.splitext(manage_vcm_path)[0]
 
     # What's the path to our Manage root folder?
     final_tst_path = os.path.join(manage_path, "environment")
 
     # What's the path to root src tree?
-    src_path = os.path.dirname(repo_path)
+    src_path = os.path.dirname(repository_path)
 
     # Set the environment variable needed for the environments to build
     os.environ["S2N_VC_SRC_PATH"] = src_path
@@ -30,6 +33,20 @@ def get_configuration_object():
     # Create an scm analysis object
     scm_analysis_class = atg_scm_hooks.GitImpactedObjectFinder
 
-    return repo_path, vcm_path, final_tst_path, scm_analysis_class, current_sha, new_sha
+    configuration = {
+        "repository_path": repository_path,
+        "manage_vcm_path": manage_vcm_path,
+        "final_tst_path": final_tst_path,
+        "scm_analysis_class": scm_analysis_class,
+        "current_sha": current_sha,
+        "new_sha": new_sha,
+    }
+
+    return configuration
+
+
+def persist_changes(changed_files):
+    pass
+
 
 # EOF
