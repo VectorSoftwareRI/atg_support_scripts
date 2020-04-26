@@ -180,28 +180,49 @@ class ManageBuilder(atg_misc.ParallelExecutor):
             # Remove the script
             self.remove_script(basename)
 
+        # Find all of the build environments (starting from our Manage project root)
         self.discover_environments()
 
-        self.run_routine_parallel(self.print_env, self.environments)
+        # Build the environments in parallel
+        self.run_routine_parallel(self.build_env, self.environments)
 
-    def print_env(self, env_name, env_location):
+    def build_env(self, env_name, env_location):
+        """
+        Builds a given environment name in the given location
+        """
 
+        # What's our env going to be called?
         env_script = "{env:s}.env".format(env=env_name)
+
+        # Calculate the full path
         full_script = os.path.join(env_location, env_script)
+
+        # Check it exists
         assert os.path.exists(full_script) and os.path.isfile(full_script)
 
+        # Where is the environment going to be when it is built?
         built_env = os.path.join(env_location, env_name)
+
+        # Check it doesn't exist
         assert not os.path.exists(built_env)
 
+        # Clicast command to build on environment
         cmd = "{clicast:s} -lc environment script run {env_script:s}".format(
             clicast=self.clicast_exe, env_script=env_script
         )
 
+        # Log to the file 'rebuild'
         output_prefix = os.path.join(env_location, "rebuild")
-        stdout, stderr, returncode = atg_misc.run_cmd(
+
+        # Run our command
+        _, _, returncode = atg_misc.run_cmd(
             cmd, env_location, log_file_prefix=output_prefix
         )
 
+        # Make sure it didn't fail
+        assert not returncode
+
+        # We should now have a built environment
         assert os.path.exists(built_env) and os.path.isdir(built_env)
 
 
