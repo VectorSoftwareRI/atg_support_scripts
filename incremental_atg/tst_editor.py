@@ -49,7 +49,7 @@ class TstFile(object):
 
                 if in_test and line.strip() == self.TEST_END_MARKER:
 
-                    # Write current test 
+                    # Write current test
                     if not (pattern_match and subprogram_match):
                         for cur_test_line in self.current_test:
                             output_file.write(cur_test_line)
@@ -62,7 +62,7 @@ class TstFile(object):
                         output_file.write(line)
                     else:
                         skip_line = False
-               
+
 
 def main():
 

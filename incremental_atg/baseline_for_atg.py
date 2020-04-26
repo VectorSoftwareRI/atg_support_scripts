@@ -95,9 +95,18 @@ class Baseline:
         clicast = os.path.join(VC_PATH, "clicast")
         self.run_cmd([clicast] + args, label=label)
 
-    def run(self, run_atg=True, atg_file=FILE_ATG, max_iter=8, check_fixedpoint=True, copy_out_manage=True):
+    def run(
+        self,
+        run_atg=True,
+        atg_file=FILE_ATG,
+        max_iter=8,
+        check_fixedpoint=True,
+        copy_out_manage=True,
+    ):
 
-        assert max_iter > 0, "max iters must be greater than zero, otherwise the tst will not be correctly stripped for ATTRIBUTES"
+        assert (
+            max_iter > 0
+        ), "max iters must be greater than zero, otherwise the tst will not be correctly stripped for ATTRIBUTES"
 
         #
         # Build the env, the baselining tests and the ATG tests
@@ -189,9 +198,9 @@ class Baseline:
         if copy_out_manage:
             self.copyfile(
                 FILE_FINAL,
-                os.path.join("..", "..", "environment", "{env_dir:s}", "{env_dir:s}.tst").format(
-                    env_dir=self.env_dir
-                ),
+                os.path.join(
+                    "..", "..", "environment", "{env_dir:s}", "{env_dir:s}.tst"
+                ).format(env_dir=self.env_dir),
             )
 
 
