@@ -98,6 +98,8 @@ class Baseline:
         copy_out_manage=True,
     ):
 
+        atg_misc.print_msg("Baseline test processing: {:s}".format(self.env_dir))
+
         assert (
             max_iter > 0
         ), "max iters must be greater than zero, otherwise the tst will not be correctly stripped for ATTRIBUTES"

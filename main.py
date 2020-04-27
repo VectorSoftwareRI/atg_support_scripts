@@ -9,6 +9,7 @@ import incremental_atg.debug_report as atg_debug_report
 import incremental_atg.default_parser as default_parser
 import incremental_atg.discover as atg_discover
 import incremental_atg.process_project as atg_processor
+import incremental_atg.misc as atg_misc
 
 import logging
 from multiprocessing_logging import install_mp_handler
@@ -48,6 +49,11 @@ def incremental_atg(options):
         else:
             logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
             install_mp_handler()
+
+    if options.verbosity:
+        atg_misc.be_verbose = True
+    else:
+        atg_misc.be_verbose = False
 
     # Create an scm analysis object
     scm_analyser = scm_analysis_class(repository_path, options.allow_moves)

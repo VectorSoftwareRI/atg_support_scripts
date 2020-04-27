@@ -16,6 +16,21 @@ log = logging.getLogger("Incremental ATG")
 TRUNC_DOTS = "..."
 DO_NOT_DECORATE_METHODS = ["__repr__", "__str__", "__init__"]
 
+be_verbose = False
+
+class bcolours:
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    BOLD = '\033[1m'
+    ENDC = '\033[0m'
+
+MSG_INFO_MARKER = "{:s}[{:s}+{:s}]{:s}".format(bcolours.BLUE, bcolours.GREEN, bcolours.BLUE, bcolours.ENDC)
+
+def print_msg(msg):
+    if not be_verbose:
+        return
+    print("{:s} {:s}{:s}{:s}".format(MSG_INFO_MARKER, bcolours.BOLD, msg, bcolours.ENDC))
+
 
 def str_trunc(text, headsize=16, tailsize=8):
     text = str(text)

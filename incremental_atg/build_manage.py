@@ -187,6 +187,7 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         """
         Processes the Manage project
         """
+        atg_misc.print_msg("Processing manage project")
 
         if not self.skip_build:
             # Get a temporary file with a Python suffix
@@ -216,6 +217,8 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         else:
             # Find those that have already built
             self.check_built_environments()
+
+        atg_misc.print_msg("Done processing manage project")
 
     def check_env(self, env_name, env_location, returncode=False):
 
