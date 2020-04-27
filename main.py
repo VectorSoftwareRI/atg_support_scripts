@@ -45,7 +45,9 @@ def incremental_atg(options):
     if options.logging:
 
         if options.log_file:
-            logging.basicConfig(filename=options.log_file, filemode="w", level=logging.DEBUG)
+            logging.basicConfig(
+                filename=options.log_file, filemode="w", level=logging.DEBUG
+            )
         else:
             logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
             install_mp_handler()
