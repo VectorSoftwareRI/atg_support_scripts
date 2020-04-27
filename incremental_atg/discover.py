@@ -39,6 +39,9 @@ class DiscoverEnvironmentDependencies(atg_misc.ParallelExecutor):
         # For each environment, what are the units, and for those units, what are the routines?
         self.envs_to_units = {}
 
+    def __repr__(self):
+        return str({"repository_prefix": self.repository_prefix})
+
     def find_files(self, env_path):
         """
         Given an environment folder, finds the set of files this environment

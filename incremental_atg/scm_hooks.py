@@ -43,6 +43,9 @@ class GitImpactedObjectFinder(ImpactedObjectFinder):
         # Create our git class
         self.repo = git.Repo(repository_location)
 
+    def __repr__(self):
+        return str(self.repo)
+
     def _find_all_files(self):
         g = git.Git(self.repository_location)
         all_files = {fname.strip() for fname in g.ls_files().split("\n")}
