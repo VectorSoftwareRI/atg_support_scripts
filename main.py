@@ -120,10 +120,8 @@ def incremental_atg(options):
         final_tst_path,
     )
 
-    print("Processing ... ", end="", flush=True)
     # Process our environments
     ia.process()
-    print("Done!", flush=True)
 
     #
     # TODO: get the changed files and pass them in to the persistence
