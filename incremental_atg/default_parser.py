@@ -34,6 +34,12 @@ def get_default_parser():
     )
     parser.add("--limit_unchanged", required=True, help="limit unchanged", type=int)
     parser.add("--allow_moves", required=True, help="allow moves", type=boolean_string)
+    parser.add(
+        "--allow_broken_environments",
+        required=True,
+        help="allow broken environments",
+        type=boolean_string,
+    )
 
     return parser
 

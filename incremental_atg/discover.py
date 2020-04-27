@@ -7,7 +7,7 @@ import xmltodict
 import incremental_atg.misc as atg_misc
 
 
-class DiscoverManageDependencies(atg_misc.ParallelExecutor):
+class DiscoverEnvironmentDependencies(atg_misc.ParallelExecutor):
     """
     Helper class to help identify:
 
@@ -152,7 +152,7 @@ FROM   functions
     @atg_misc.log_entry_exit
     def process(self):
         """
-        Calculates the 'interesting information' for a given Manage project
+        Calculates the 'interesting information' for a given set of environments
         """
 
         execution_context = []

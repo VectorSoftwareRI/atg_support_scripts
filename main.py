@@ -42,23 +42,33 @@ def incremental_atg(options):
     # Calculate preserved files
     preserved_files = scm_analyser.calculate_preserved_files(current_sha, new_sha)
 
-    # Create
+    # Create our Manage project
     manage_builder = build_manage.ManageBuilder(
-        manage_vcm_path, cleanup=options.cleanup, skip_build=options.skip_build
+        manage_vcm_path,
+        cleanup=options.cleanup,
+        skip_build=options.skip_build,
+        allow_broken_environments=options.allow_broken_environments,
     )
     manage_builder.process()
 
-    manage_dependencies = atg_discover.DiscoverManageDependencies(
-        repository_path, manage_builder.environments
+    # Discover the environments (not neccessarily tied to Manage!)
+    manage_dependencies = atg_discover.DiscoverEnvironmentDependencies(
+        repository_path, manage_builder.built_environments
     )
     manage_dependencies.process()
 
     # Our set of impacted environments
     impacted_envs = set()
 
+    # For each environment with its dependencies ...
     for environment, dependencies in manage_dependencies.envs_to_fnames.items():
+
+        # ... check it if *only* uses preserved files
         uses_only_preserved_files = dependencies.issubset(preserved_files)
+
+        # If not ...
         if not uses_only_preserved_files:
+            # ... flag it as impacted!
             impacted_envs.add(environment)
 
     if options.dry_run:

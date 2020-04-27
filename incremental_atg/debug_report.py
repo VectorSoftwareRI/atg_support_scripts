@@ -41,11 +41,12 @@ def debug_report(
     print("#" * 80)
     print(
         "After building {vcm:s}, we found {envs:d} environments:".format(
-            vcm=manage_vcm_path, envs=len(manage_builder.environments)
+            vcm=manage_vcm_path, envs=len(manage_builder.all_environments)
         )
     )
-    for env in manage_builder.environments:
-        print("      {:s}".format(env[0]))
+    for env in manage_builder.all_environments:
+        status = "BUILT" if env in manage_builder.built_environments else "NOT BUILT"
+        print("      {:s} (status: {:s})".format(env[0], status))
     print("#" * 80)
     print("#" * 80)
     print(

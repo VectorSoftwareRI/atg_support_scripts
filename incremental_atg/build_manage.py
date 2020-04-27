@@ -8,7 +8,13 @@ import incremental_atg.misc as atg_misc
 
 
 class ManageBuilder(atg_misc.ParallelExecutor):
-    def __init__(self, manage_vcm_path, cleanup=False, skip_build=False):
+    def __init__(
+        self,
+        manage_vcm_path,
+        cleanup=False,
+        skip_build=False,
+        allow_broken_environments=False,
+    ):
 
         # Call the super constructor
         super().__init__()
@@ -37,6 +43,9 @@ class ManageBuilder(atg_misc.ParallelExecutor):
 
         # Should we skip doing the build?
         self.skip_build = skip_build
+
+        # Do we allow for broken environments?
+        self.allow_broken_environments = allow_broken_environments
 
         if self.skip_build:
             assert not cleanup
@@ -69,7 +78,10 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         )
 
         # The set of all environments in this Manage project
-        self.environments = set()
+        self.all_environments = set()
+
+        # Build environments
+        self.built_environments = set()
 
     def run_manage_command(self, cmd_suffix):
         """
@@ -161,12 +173,17 @@ class ManageBuilder(atg_misc.ParallelExecutor):
                     if os.path.exists(os.path.join(build_dir, "CCAST_.CFG")):
 
                         # If we have 'CCAST_.CFG', store this folder
-                        self.environments.add((env_name, build_dir))
+                        self.all_environments.add((env_name, build_dir))
 
     @atg_misc.log_entry_exit
     def build_environments(self):
         # Build the environments in parallel
-        self.run_routine_parallel(self.build_env, self.environments)
+        self.run_routine_parallel(self.build_env, self.all_environments)
+
+    @atg_misc.log_entry_exit
+    def check_built_environments(self):
+        # Build the environments in parallel
+        self.run_routine_parallel(self.check_env, self.all_environments)
 
     def process(self):
         """
@@ -198,6 +215,20 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         if not self.skip_build:
             # Build all found environments
             self.build_environments()
+        else:
+            # Find those that have already built
+            self.check_built_environments()
+
+    def check_env(self, env_name, env_location, returncode=False):
+
+        built_env = os.path.join(env_location, env_name)
+
+        if self.check_success_build(returncode, built_env):
+            self.built_environments.add((env_name, env_location))
+        elif not self.allow_broken_environments:
+            raise RuntimeError(
+                "{env:s} did not build. Cowardly aborting.".format(env=built_env)
+            )
 
     def build_env(self, env_name, env_location):
         """
@@ -232,11 +263,34 @@ class ManageBuilder(atg_misc.ParallelExecutor):
             cmd, env_location, log_file_prefix=output_prefix
         )
 
+        self.check_env(env_name, env_location, returncode=returncode)
+
+    def check_success_build(self, returncode, built_env):
+
         # Make sure it didn't fail
-        assert not returncode
+        zero_return_code = not returncode
 
         # We should now have a built environment
-        assert os.path.exists(built_env) and os.path.isdir(built_env)
+        folder_exists = os.path.exists(built_env) and os.path.isdir(built_env)
+
+        # Check the files we expect to exist
+        needed_files = ["cover.db", "include_dependencies.xml"]
+
+        # Did we find all of our files?
+        found_all = all(
+            [
+                os.path.exists(os.path.join(built_env, fname))
+                and os.path.isfile(os.path.join(built_env, fname))
+                for fname in needed_files
+            ]
+        )
+
+        build_log = os.path.join(built_env, "environment_builder.log")
+        build_log_content = open(build_log).read()
+        build_success = "Environment built Successfully" in build_log_content
+
+        # Environment is good if we have all of these
+        return all([zero_return_code, folder_exists, found_all, build_success])
 
 
 if __name__ == "__main__":
