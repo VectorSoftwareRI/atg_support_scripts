@@ -56,7 +56,7 @@ def debug_report(
     )
     for env_path, units in manage_dependencies.envs_to_units.items():
         rout_count = 0
-        for unit, functions in units.items():
+        for _, functions in units.items():
             rout_count += len(functions)
         env = os.path.basename(env_path)
         print("      {:s} had {:d} routines".format(env, rout_count))
@@ -84,7 +84,7 @@ def debug_report(
         impacted_deps = used_files - preserved_files
         units = manage_dependencies.envs_to_units[env_path]
         rout_count = 0
-        for unit, functions in units.items():
+        for _, functions in units.items():
             rout_count += len(functions)
         print(
             "    {env:s} ({rout_count:d} routines) due to {files:s}".format(
