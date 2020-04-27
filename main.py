@@ -42,8 +42,12 @@ def incremental_atg(options):
 
     #  Logging
     if options.logging:
-        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-        install_mp_handler()
+
+        if options.log_file:
+            logging.basicConfig(filename=options.log_file, filemode="w", level=logging.DEBUG)
+        else:
+            logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+            install_mp_handler()
 
     # Create an scm analysis object
     scm_analyser = scm_analysis_class(repository_path, options.allow_moves)

@@ -42,6 +42,7 @@ def get_default_parser():
         type=boolean_string,
     )
     parser.add("-l", "--logging", required=True, help="log calls", type=boolean_string)
+    parser.add("-lf", "--log_file", required=False, help="log file", type=str)
 
     return parser
 
