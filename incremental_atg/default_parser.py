@@ -41,6 +41,7 @@ def get_default_parser():
         help="allow broken environments",
         type=boolean_string,
     )
+    parser.add("-l", "--logging", required=True, help="log calls", type=boolean_string)
 
     return parser
 

@@ -13,9 +13,6 @@ import incremental_atg.process_project as atg_processor
 import logging
 from multiprocessing_logging import install_mp_handler
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-install_mp_handler()
-
 
 def incremental_atg(options):
     """
@@ -42,6 +39,11 @@ def incremental_atg(options):
     scm_analysis_class = configuration["scm_analysis_class"]
     current_sha = configuration["current_sha"]
     new_sha = configuration["new_sha"]
+
+    #  Logging
+    if options.logging:
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+        install_mp_handler()
 
     # Create an scm analysis object
     scm_analyser = scm_analysis_class(repository_path, options.allow_moves)
