@@ -57,6 +57,8 @@ class ProcessProject(atg_misc.ParallelExecutor):
             self.env_tsts[env] = {}
             self.merged_tsts[env] = {}
 
+        self.updated_files = set()
+
     def get_edg_flags(self, env_path):
         """
         Given an environment build folder, obtains the EDG flags
@@ -329,6 +331,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
         final_tst = os.path.join(final_folder, "{:s}.tst".format(env_name))
         shutil.copyfile(combined_atg_existing, final_tst)
+
+        # Store the final tst
+        self.updated_files.add(final_tst)
 
     @atg_misc.log_entry_exit
     def merge_atg_routine_tst(self):

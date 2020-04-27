@@ -1,4 +1,5 @@
 timeout = 2
+report = True
 dry_run = True
 baseline_iterations = 1
 cleanup = False

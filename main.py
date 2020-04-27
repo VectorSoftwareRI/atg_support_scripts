@@ -4,10 +4,11 @@ import os
 import sys
 import importlib
 
+import incremental_atg.build_manage as build_manage
+import incremental_atg.debug_report as atg_debug_report
+import incremental_atg.default_parser as default_parser
 import incremental_atg.discover as atg_discover
 import incremental_atg.process_project as atg_processor
-import incremental_atg.build_manage as build_manage
-import incremental_atg.default_parser as default_parser
 
 
 def incremental_atg(options):
@@ -71,9 +72,10 @@ def incremental_atg(options):
             # ... flag it as impacted!
             impacted_envs.add(environment)
 
-    if options.dry_run:
-        import incremental_atg.debug_report as atg_debug_report
+    # Dry run or reporting
+    if options.dry_run or options.report:
 
+        # Generate the report
         atg_debug_report.debug_report(
             repository_path,
             current_sha,
@@ -87,25 +89,29 @@ def incremental_atg(options):
             impacted_envs,
         )
 
-    else:
-        # Create an incremental ATG object
-        ia = atg_processor.ProcessProject(
-            impacted_envs,
-            manage_dependencies.envs_to_units,
-            options.timeout,
-            options.baseline_iterations,
-            final_tst_path,
-        )
+    if options.dry_run:
+        # If we're dry run, finish here
+        return 0
 
-        # Process our environments
-        ia.process()
+    # Create an incremental ATG object
+    ia = atg_processor.ProcessProject(
+        impacted_envs,
+        manage_dependencies.envs_to_units,
+        options.timeout,
+        options.baseline_iterations,
+        final_tst_path,
+    )
 
-        #
-        # TODO: get the changed files and pass them in to the persistence
-        # module
-        #
-        updated_files = []
-        configuration_module.persist_changes(updated_files)
+    print("Processing ... ", end="", flush=True)
+    # Process our environments
+    ia.process()
+    print("Done!", flush=True)
+
+    #
+    # TODO: get the changed files and pass them in to the persistence
+    # module
+    #
+    configuration_module.persist_changes(ia.updated_files)
 
     return 0
 

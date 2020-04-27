@@ -286,8 +286,11 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         )
 
         build_log = os.path.join(built_env, "environment_builder.log")
-        build_log_content = open(build_log).read()
-        build_success = "Environment built Successfully" in build_log_content
+        if os.path.exists(build_log):
+            build_log_content = open(build_log).read()
+            build_success = "Environment built Successfully" in build_log_content
+        else:
+            build_success = False
 
         # Environment is good if we have all of these
         return all([zero_return_code, folder_exists, found_all, build_success])

@@ -46,7 +46,12 @@ def get_configuration():
 
 
 def persist_changes(changed_files):
-    pass
+    if changed_files:
+        print("Persisting ...")
+        for fname in changed_files:
+            print("    {:s}".format(fname))
+    else:
+        print("No changes?")
 
 
 # EOF

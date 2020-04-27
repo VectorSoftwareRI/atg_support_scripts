@@ -20,6 +20,7 @@ def get_default_parser():
         "-p", "--config_py", required=True, help="Python configuration object", type=str
     )
     parser.add("-t", "--timeout", required=True, help="timeout", type=int)
+    parser.add("-r", "--report", required=True, help="report", type=boolean_string)
     parser.add("-dr", "--dry_run", required=True, help="dry-run", type=boolean_string)
     parser.add(
         "-bli",
