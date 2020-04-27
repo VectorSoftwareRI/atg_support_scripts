@@ -13,14 +13,55 @@ import logging
 
 log = logging.getLogger("Incremental ATG")
 
+TRUNC_DOTS = "..."
+DO_NOT_DECORATE_METHODS = ["__repr__", "__str__", "__init__"]
+
+
+def str_trunc(text, headsize=16, tailsize=8):
+    text = str(text)
+    if len(text) > headsize + tailsize + len(TRUNC_DOTS):
+        ret = text[:headsize] + TRUNC_DOTS
+        if tailsize > 0:
+            ret += text[-tailsize:]
+    else:
+        ret = text
+    assert len(ret) <= (headsize + len(TRUNC_DOTS) + tailsize)
+    return ret
+
+
+def get_class_state(instance):
+    class_name = instance.__class__.__name__
+    if instance:
+        instance_state = "(class={:s} state={:s}) ".format(class_name, str(instance))
+    else:
+        instance_state = ""
+    return instance_state
+
 
 @wrapt.decorator
-def log_entry_exit(wrapped, _, args, kwargs):
-    #print("Enter {:s} ...".format(wrapped.__name__), flush=True, end=" ")
-    log.debug("Enter: {:s}".format(wrapped.__name__))
+def log_entry_exit(wrapped, instance, args, kwargs):
+
+    callee_name = wrapped.__name__
+    str_args = str([str_trunc(a) for a in args])
+    instance_state = get_class_state(instance)
+
+    log.debug(
+        "Call: {inst:s}{callee:s} args={args:s}".format(
+            inst=instance_state, callee=callee_name, args=str_args
+        )
+    )
+
     result = wrapped(*args, **kwargs)
-    log.debug("Done: {:s}".format(wrapped.__name__))
-    #print("Done!", flush=True)
+
+    str_result = str_trunc(result)
+    instance_state = get_class_state(instance)
+
+    log.debug(
+        "Return: {inst:s}{callee:s} ret={result:s}".format(
+            inst=instance_state, callee=callee_name, result=str_result
+        )
+    )
+
     return result
 
 
@@ -28,11 +69,13 @@ def for_all_methods(decorator):
     """
     Class decorator
     """
+
     def decorate(cls):
         for attr in cls.__dict__:
-            if callable(getattr(cls, attr)):
+            if callable(getattr(cls, attr)) and attr not in DO_NOT_DECORATE_METHODS:
                 setattr(cls, attr, decorator(getattr(cls, attr)))
         return cls
+
     return decorate
 
 
@@ -129,6 +172,7 @@ class ParallelExecutor(object):
     Helper class that makes it easy to write other classes that can do things
     in parallel
     """
+
     def __init__(self):
         # When running in parallel, how many workers?
         self.worker_count = multiprocessing.cpu_count()

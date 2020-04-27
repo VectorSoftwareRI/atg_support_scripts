@@ -11,6 +11,7 @@ from collections import OrderedDict
 
 import incremental_atg.misc as atg_misc
 
+
 @atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class MergeDisplayAttributes(object):
     def __init__(self, src_tst, dest_tst, output_tst):

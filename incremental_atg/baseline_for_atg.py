@@ -19,6 +19,7 @@ SCRIPTS_HOME_DIR = os.path.dirname(__file__)
 ENV_EXT = ".env"
 VC_PATH = os.getenv("VECTORCAST_DIR")
 
+
 @atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class Baseline:
     def __init__(self, env_file, verbose=1):

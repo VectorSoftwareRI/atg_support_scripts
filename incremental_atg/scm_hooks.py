@@ -25,6 +25,9 @@ class ImpactedObjectFinder(object):
         assert isinstance(ret_val, set)
         return ret_val
 
+    def __repr__(self):
+        return str({"repository_location": self.repository_location})
+
 
 @atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class GitImpactedObjectFinder(ImpactedObjectFinder):
