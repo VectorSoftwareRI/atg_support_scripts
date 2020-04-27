@@ -25,7 +25,7 @@ def get_configuration():
     os.environ["ATG_WORKFLOW_VC_SRC_PATH"] = repository_path
 
     # What two shas do we want to analyse?
-    current_sha, new_sha = atg_misc.parse_git_for_hashes(repository_path)
+    current_id, new_id = atg_misc.parse_git_for_hashes(repository_path)
 
     # Create an scm analysis object
     scm_analysis_class = atg_scm_hooks.GitImpactedObjectFinder
@@ -35,8 +35,8 @@ def get_configuration():
         "manage_vcm_path": manage_vcm_path,
         "final_tst_path": final_tst_path,
         "scm_analysis_class": scm_analysis_class,
-        "current_sha": current_sha,
-        "new_sha": new_sha,
+        "current_id": current_id,
+        "new_id": new_id,
     }
 
     return configuration

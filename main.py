@@ -31,15 +31,15 @@ def incremental_atg(options):
     assert "manage_vcm_path" in configuration
     assert "final_tst_path" in configuration
     assert "scm_analysis_class" in configuration
-    assert "current_sha" in configuration
-    assert "new_sha" in configuration
+    assert "current_id" in configuration
+    assert "new_id" in configuration
 
     repository_path = configuration["repository_path"]
     manage_vcm_path = configuration["manage_vcm_path"]
     final_tst_path = configuration["final_tst_path"]
     scm_analysis_class = configuration["scm_analysis_class"]
-    current_sha = configuration["current_sha"]
-    new_sha = configuration["new_sha"]
+    current_id = configuration["current_id"]
+    new_id = configuration["new_id"]
 
     #  Logging
     if options.logging:
@@ -59,7 +59,7 @@ def incremental_atg(options):
     scm_analyser = scm_analysis_class(repository_path, options.allow_moves)
 
     # Calculate preserved files
-    preserved_files = scm_analyser.calculate_preserved_files(current_sha, new_sha)
+    preserved_files = scm_analyser.calculate_preserved_files(current_id, new_id)
 
     # Create our Manage project
     manage_builder = build_manage.ManageBuilder(
@@ -96,8 +96,8 @@ def incremental_atg(options):
         # Generate the report
         atg_debug_report.debug_report(
             repository_path,
-            current_sha,
-            new_sha,
+            current_id,
+            new_id,
             scm_analyser,
             preserved_files,
             options.limit_unchanged,

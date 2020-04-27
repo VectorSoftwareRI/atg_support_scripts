@@ -27,8 +27,8 @@ def get_configuration():
     os.environ["S2N_VC_SRC_PATH"] = src_path
 
     # What two shas do we want to analyse?
-    current_sha = "c158f0c8cb190b5121702fbe0e2b16547c5b63b4"
-    new_sha = "4caa406c233b57e6f0bb7d5a62c83aca237b7e31"
+    current_id = "c158f0c8cb190b5121702fbe0e2b16547c5b63b4"
+    new_id = "4caa406c233b57e6f0bb7d5a62c83aca237b7e31"
 
     # Create an scm analysis object
     scm_analysis_class = atg_scm_hooks.GitImpactedObjectFinder
@@ -38,8 +38,8 @@ def get_configuration():
         "manage_vcm_path": manage_vcm_path,
         "final_tst_path": final_tst_path,
         "scm_analysis_class": scm_analysis_class,
-        "current_sha": current_sha,
-        "new_sha": new_sha,
+        "current_id": current_id,
+        "new_id": new_id,
     }
 
     return configuration
