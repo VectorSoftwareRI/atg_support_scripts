@@ -4,6 +4,7 @@ import incremental_atg.misc as atg_misc
 import os
 
 
+@atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class ImpactedObjectFinder(object):
     def __init__(self, repository_location, allow_moves):
         self.repository_location = repository_location
@@ -15,7 +16,6 @@ class ImpactedObjectFinder(object):
         """
         raise NotImplementedError()
 
-    @atg_misc.log_entry_exit
     def calculate_preserved_files(self, current_id, new_id):
         """
         Method that is called to obtain the set of files that haven't changed
@@ -26,6 +26,7 @@ class ImpactedObjectFinder(object):
         return ret_val
 
 
+@atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class GitImpactedObjectFinder(ImpactedObjectFinder):
     """
     Class to return the list of file changes for a given repo

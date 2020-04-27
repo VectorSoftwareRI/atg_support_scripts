@@ -6,7 +6,7 @@ import xmltodict
 
 import incremental_atg.misc as atg_misc
 
-
+@atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class DiscoverEnvironmentDependencies(atg_misc.ParallelExecutor):
     """
     Helper class to help identify:
@@ -149,7 +149,6 @@ FROM   functions
         # Calulate the map between environments and TUs
         self.find_units_functions(env_path)
 
-    @atg_misc.log_entry_exit
     def process(self):
         """
         Calculates the 'interesting information' for a given set of environments

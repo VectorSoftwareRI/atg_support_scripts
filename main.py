@@ -10,6 +10,12 @@ import incremental_atg.default_parser as default_parser
 import incremental_atg.discover as atg_discover
 import incremental_atg.process_project as atg_processor
 
+import logging
+from multiprocessing_logging import install_mp_handler
+
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+install_mp_handler()
+
 
 def incremental_atg(options):
     """

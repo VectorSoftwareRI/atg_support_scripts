@@ -9,7 +9,9 @@ from __future__ import (
 import sys
 from collections import OrderedDict
 
+import incremental_atg.misc as atg_misc
 
+@atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class MergeDisplayAttributes(object):
     def __init__(self, src_tst, dest_tst, output_tst):
         # What's the tst we want to take attributes from?

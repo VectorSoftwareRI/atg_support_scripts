@@ -6,7 +6,7 @@ import tempfile
 
 import incremental_atg.misc as atg_misc
 
-
+@atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class ManageBuilder(atg_misc.ParallelExecutor):
     def __init__(
         self,
@@ -99,7 +99,6 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         # Manage sure it didn't fail
         assert not returncode
 
-    @atg_misc.log_entry_exit
     def add_script(self, script_path, script_name):
         """
         Add our build script to the Manage project
@@ -113,7 +112,6 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         build_script = "--build-script {script:s}".format(script=script_name)
         self.run_manage_command(build_script)
 
-    @atg_misc.log_entry_exit
     def populate_build_folder(self):
         """
         'Populates' Manages build folder
@@ -126,7 +124,6 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         # Make sure we now have a build folder!
         assert os.path.isdir(self.build_folder)
 
-    @atg_misc.log_entry_exit
     def remove_script(self, script_name):
         """
         Remove our tempoary build script
@@ -142,7 +139,6 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         )
         self.run_manage_command(delete_script)
 
-    @atg_misc.log_entry_exit
     def discover_environments(self):
         """
         Walk the Manage build folder and discover the VectorCAST environments
@@ -175,12 +171,10 @@ class ManageBuilder(atg_misc.ParallelExecutor):
                         # If we have 'CCAST_.CFG', store this folder
                         self.all_environments.add((env_name, build_dir))
 
-    @atg_misc.log_entry_exit
     def build_environments(self):
         # Build the environments in parallel
         self.run_routine_parallel(self.build_env, self.all_environments)
 
-    @atg_misc.log_entry_exit
     def check_built_environments(self):
         # Build the environments in parallel
         self.run_routine_parallel(self.check_env, self.all_environments)

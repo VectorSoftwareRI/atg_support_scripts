@@ -8,6 +8,7 @@ import incremental_atg.misc as atg_misc
 import incremental_atg.tst_editor as tst_editor
 
 
+@atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class ProcessProject(atg_misc.ParallelExecutor):
     """
     Given a Manage project and a set of environments, re-runs the "impacted"
@@ -181,7 +182,6 @@ class ProcessProject(atg_misc.ParallelExecutor):
             # Update the shared state
             self.env_tsts[env_path][(unit, routine_name)] = tst_file
 
-    @atg_misc.log_entry_exit
     def run_atg(self):
         """
         Runs ATG in parallel, with parallelism at the routine level
@@ -335,7 +335,6 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # Store the final tst
         self.updated_files.add(final_tst)
 
-    @atg_misc.log_entry_exit
     def merge_atg_routine_tst(self):
         """
         Merges the routine-level tst files into one big file, with parallelism
@@ -354,7 +353,6 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # Run this routine in parallel given the provided context
         self.run_routine_parallel(routine, routine_context)
 
-    @atg_misc.log_entry_exit
     def baseline(self):
         """
         Performs baselining for each environment
@@ -372,7 +370,6 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # Run this routine in parallel given the provided context
         self.run_routine_parallel(routine, routine_context)
 
-    @atg_misc.log_entry_exit
     def prune_and_merge(self):
         """
         Performs baselining for each environment

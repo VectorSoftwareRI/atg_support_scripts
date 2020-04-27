@@ -6,6 +6,7 @@ import filecmp
 import incremental_atg.merge_display_attributes as atg_merge_attrs
 import incremental_atg.misc as atg_misc
 
+
 FILE_BL = "bl.tst"
 FILE_ATG = "atg.tst"
 FILE_MERGED = "merged.tst"
@@ -18,7 +19,7 @@ SCRIPTS_HOME_DIR = os.path.dirname(__file__)
 ENV_EXT = ".env"
 VC_PATH = os.getenv("VECTORCAST_DIR")
 
-
+@atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class Baseline:
     def __init__(self, env_file, verbose=1):
         self.env_file = os.path.basename(env_file)

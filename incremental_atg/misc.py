@@ -6,16 +6,37 @@ import multiprocessing
 import monotonic
 from multiprocessing.dummy import Pool as ThreadPool
 from contextlib import contextmanager
+import inspect
+
+import logging
+
+
+log = logging.getLogger("Incremental ATG")
 
 
 @wrapt.decorator
 def log_entry_exit(wrapped, _, args, kwargs):
-    # print("Enter {:s} ...".format(wrapped.__name__), flush=True, end=" ")
+    #print("Enter {:s} ...".format(wrapped.__name__), flush=True, end=" ")
+    log.debug("Enter: {:s}".format(wrapped.__name__))
     result = wrapped(*args, **kwargs)
-    # print("Done!", flush=True)
+    log.debug("Done: {:s}".format(wrapped.__name__))
+    #print("Done!", flush=True)
     return result
 
 
+def for_all_methods(decorator):
+    """
+    Class decorator
+    """
+    def decorate(cls):
+        for attr in cls.__dict__:
+            if callable(getattr(cls, attr)):
+                setattr(cls, attr, decorator(getattr(cls, attr)))
+        return cls
+    return decorate
+
+
+@log_entry_exit
 def parse_git_for_hashes(repo="."):
     # Hack to calculate the current and previous git hash
     cmd = shlex.split("git log --pretty=oneline --abbrev-commit")
@@ -30,6 +51,7 @@ def parse_git_for_hashes(repo="."):
     return (head_sha, branch_sha)
 
 
+@log_entry_exit
 def run_cmd(cmd, cwd, environ=None, timeout=None, log_file_prefix=None, shell=True):
 
     if not environ:
@@ -101,12 +123,12 @@ def wrap_class_method(args):
     func(*args)
 
 
+@for_all_methods(log_entry_exit)
 class ParallelExecutor(object):
     """
     Helper class that makes it easy to write other classes that can do things
     in parallel
     """
-
     def __init__(self):
         # When running in parallel, how many workers?
         self.worker_count = multiprocessing.cpu_count()
@@ -119,7 +141,6 @@ class ParallelExecutor(object):
         Given a routine and routine context, builds-up what is neccessary to
         call the routine via a parallel pool
         """
-
         #
         # What's the 'execution context' for subprocess?
         #
