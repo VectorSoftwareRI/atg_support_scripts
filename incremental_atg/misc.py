@@ -172,7 +172,7 @@ def wrap_class_method(args):
     func(*args)
 
 
-@for_all_methods(log_entry_exit)
+@for_all_methods(log_entry_exit, exclude_methods=["update_shared_state"])
 class ParallelExecutor(object):
     """
     Helper class that makes it easy to write other classes that can do things

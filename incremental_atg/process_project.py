@@ -8,9 +8,7 @@ import incremental_atg.misc as atg_misc
 import incremental_atg.tst_editor as tst_editor
 
 
-@atg_misc.for_all_methods(
-    atg_misc.log_entry_exit, exclude_methods=["update_shared_state"]
-)
+@atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class ProcessProject(atg_misc.ParallelExecutor):
     """
     Given a Manage project and a set of environments, re-runs the "impacted"
