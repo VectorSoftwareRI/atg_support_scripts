@@ -46,7 +46,7 @@ def log_entry_exit(wrapped, instance, args, kwargs):
     instance_state = get_class_state(instance)
 
     log.debug(
-        "Call: {inst:s}{callee:s} args={args:s}".format(
+        "Call:   {inst:s}{callee:s} args={args:s}".format(
             inst=instance_state, callee=callee_name, args=str_args
         )
     )
@@ -57,8 +57,8 @@ def log_entry_exit(wrapped, instance, args, kwargs):
     instance_state = get_class_state(instance)
 
     log.debug(
-        "Return: {inst:s}{callee:s} ret={result:s}".format(
-            inst=instance_state, callee=callee_name, result=str_result
+        "Return: {inst:s}{callee:s} args={args:s} ret={result:s}".format(
+            inst=instance_state, callee=callee_name, result=str_result, args=str_args
         )
     )
 
