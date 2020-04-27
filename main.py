@@ -37,7 +37,7 @@ def incremental_atg(options):
     new_sha = configuration["new_sha"]
 
     # Create an scm analysis object
-    scm_analyser = scm_analysis_class(repository_path)
+    scm_analyser = scm_analysis_class(repository_path, options.allow_moves)
 
     # Calculate preserved files
     preserved_files = scm_analyser.calculate_preserved_files(current_sha, new_sha)

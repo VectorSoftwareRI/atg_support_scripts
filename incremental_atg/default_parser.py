@@ -20,17 +20,20 @@ def get_default_parser():
         "-p", "--config_py", required=True, help="Python configuration object", type=str
     )
     parser.add("-t", "--timeout", required=True, help="timeout", type=int)
-    parser.add("-dr", "--dry_run", required=False, help="dry-run", type=boolean_string)
+    parser.add("-dr", "--dry_run", required=True, help="dry-run", type=boolean_string)
     parser.add(
-        "-bli", "--baseline_iterations", required=False, help="baseline-iters", type=int
+        "-bli",
+        "--baseline_iterations",
+        required=True,
+        help="baseline iterations",
+        type=int,
     )
+    parser.add("-cu", "--cleanup", required=True, help="clean up", type=boolean_string)
     parser.add(
-        "-cu", "--cleanup", required=False, help="skip-build", type=boolean_string
+        "-sb", "--skip_build", required=True, help="skip build", type=boolean_string
     )
-    parser.add(
-        "-sb", "--skip_build", required=False, help="skip-build", type=boolean_string
-    )
-    parser.add("--limit_unchanged", required=False, help="skip-build", type=int)
+    parser.add("--limit_unchanged", required=True, help="limit unchanged", type=int)
+    parser.add("--allow_moves", required=True, help="allow moves", type=boolean_string)
 
     return parser
 

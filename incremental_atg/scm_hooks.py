@@ -5,8 +5,9 @@ import os
 
 
 class ImpactedObjectFinder(object):
-    def __init__(self, repository_location):
+    def __init__(self, repository_location, allow_moves):
         self.repository_location = repository_location
+        self.allow_moves = allow_moves
 
     def _calculate_preserved_files(self, current_id, new_id):
         """
@@ -30,10 +31,10 @@ class GitImpactedObjectFinder(ImpactedObjectFinder):
     Class to return the list of file changes for a given repo
     """
 
-    def __init__(self, repository_location):
+    def __init__(self, repository_location, allow_moves):
 
         # Call the super constructor
-        super().__init__(repository_location)
+        super().__init__(repository_location, allow_moves)
 
         # Create our git class
         self.repo = git.Repo(repository_location)
@@ -60,8 +61,14 @@ class GitImpactedObjectFinder(ImpactedObjectFinder):
         # Iterate over the diff -- one 'diff' per file
         for diff in parsed_diff:
 
-            # Temporarily detect if the file has moved
+            # Detect if the file is new or moved
             if diff.header.old_path != diff.header.new_path:
+
+                if not self.allow_moves:
+                    raise RuntimeError(
+                        "Your commit range contains file moves. Cowardly aborting."
+                    )
+
                 git_old_path = diff.header.old_path
 
                 # If the old path is not /dev/null, then ...
