@@ -3,8 +3,8 @@ import os
 
 def debug_report(
     repository_path,
-    current_sha,
-    new_sha,
+    current_id,
+    new_id,
     scm_analyser,
     preserved_files,
     limit_unchanged,
@@ -17,7 +17,7 @@ def debug_report(
     print("#" * 80)
     print(
         "After analysing {repo:s} between {before:s} and {after:s}".format(
-            repo=repository_path, before=current_sha, after=new_sha
+            repo=repository_path, before=current_id, after=new_id
         )
     )
     print(
@@ -27,7 +27,7 @@ def debug_report(
     )
     print(
         "   There were {changed:d} changed files".format(
-            changed=len(scm_analyser._find_changed_files(current_sha, new_sha))
+            changed=len(scm_analyser._find_changed_files(current_id, new_id))
         )
     )
     print(

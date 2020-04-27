@@ -44,13 +44,13 @@ class GitImpactedObjectFinder(ImpactedObjectFinder):
         all_files = {fname.strip() for fname in g.ls_files().split("\n")}
         return all_files
 
-    def _find_changed_files(self, current_sha, new_sha):
+    def _find_changed_files(self, current_id, new_id):
         """
         Calculates the set of _changed_ files!
         """
 
         # Grab the raw git diff
-        diff_text = self.repo.git.diff(current_sha, new_sha)
+        diff_text = self.repo.git.diff(current_id, new_id)
 
         # parse the diff
         parsed_diff = whatthepatch.parse_patch(diff_text)
