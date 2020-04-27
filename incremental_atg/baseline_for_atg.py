@@ -29,6 +29,9 @@ class Baseline:
         self.call_count = dict()
         self.verbose = verbose
 
+    def __repr__(self):
+        return str({"env_file": self.env_file})
+
     def get_incr_call_count(self, label):
         self.call_count.setdefault(label, 0)
         self.call_count[label] += 1

@@ -85,7 +85,7 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         self.built_environments = set()
 
     def __repr__(self):
-        return str({"manage_vcm_path", self.manage_vcm_path})
+        return str({"manage_vcm_path": self.manage_vcm_path})
 
     def run_manage_command(self, cmd_suffix):
         """

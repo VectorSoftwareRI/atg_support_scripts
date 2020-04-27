@@ -33,6 +33,9 @@ class MergeDisplayAttributes(object):
         # The extracted attributes
         self.src_attributes = OrderedDict()
 
+    def __repr__(self):
+        return str({"src_tst": self.src_tst, "dest_tst": self.dest_tst})
+
     def extract_attributes(self):
         """
         Extracts the attributes from the src tst file

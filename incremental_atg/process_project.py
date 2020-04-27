@@ -8,7 +8,9 @@ import incremental_atg.misc as atg_misc
 import incremental_atg.tst_editor as tst_editor
 
 
-@atg_misc.for_all_methods(atg_misc.log_entry_exit)
+@atg_misc.for_all_methods(
+    atg_misc.log_entry_exit, exclude_methods=["update_shared_state"]
+)
 class ProcessProject(atg_misc.ParallelExecutor):
     """
     Given a Manage project and a set of environments, re-runs the "impacted"
@@ -59,6 +61,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
             self.merged_tsts[env] = {}
 
         self.updated_files = set()
+
+    def __repr__(self):
+        return str({"merged_tsts": self.merged_tsts})
 
     def get_edg_flags(self, env_path):
         """

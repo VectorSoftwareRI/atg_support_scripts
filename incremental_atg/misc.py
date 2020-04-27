@@ -65,14 +65,20 @@ def log_entry_exit(wrapped, instance, args, kwargs):
     return result
 
 
-def for_all_methods(decorator):
+def for_all_methods(decorator, exclude_methods=None):
     """
     Class decorator
     """
+    if exclude_methods is None:
+        exclude_methods = []
 
     def decorate(cls):
         for attr in cls.__dict__:
-            if callable(getattr(cls, attr)) and attr not in DO_NOT_DECORATE_METHODS:
+            if (
+                callable(getattr(cls, attr))
+                and attr not in DO_NOT_DECORATE_METHODS
+                and attr not in exclude_methods
+            ):
                 setattr(cls, attr, decorator(getattr(cls, attr)))
         return cls
 

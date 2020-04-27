@@ -16,6 +16,9 @@ class TstFile(object):
         self.in_path = input_file
         self.out_path = output_file
 
+    def __repr__(self):
+        return str({"in_path": self.in_path, "out_path": self.out_path})
+
     def remove(self, subprogram_regex, re_pattern):
         with open(self.out_path, "w") as output_file:
             self.process(self.in_path, output_file, subprogram_regex, re_pattern)
