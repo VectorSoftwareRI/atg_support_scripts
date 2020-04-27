@@ -133,10 +133,6 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # Where is ATG going to write its tst to?
         tst_file = "{:s}.tst".format(output_prefix)
 
-        # Where should we write stdout/stderr?
-        out_file = "{:s}.out".format(output_prefix)
-        err_file = "{:s}.err".format(output_prefix)
-
         # Build-up our environment object
         environ = os.environ.copy()
 
