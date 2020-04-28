@@ -97,6 +97,12 @@ class ManageBuilder(atg_misc.ParallelExecutor):
             manage=self.manage_exe, project=self.project_name, cmd_suffix=cmd_suffix
         )
 
+        atg_misc.print_msg(
+            "Running manage command: -p {project:s} {cmd_suffix:s}".format(
+                project=self.project_name, cmd_suffix=cmd_suffix
+            )
+        )
+
         # Run it
         _, _, returncode = atg_misc.run_cmd(full_cmd, self.cwd)
 
@@ -177,7 +183,9 @@ class ManageBuilder(atg_misc.ParallelExecutor):
 
     def build_environments(self):
         # Build the environments in parallel
+        atg_misc.print_msg("Building environments")
         self.run_routine_parallel(self.build_env, self.all_environments)
+        atg_misc.print_msg("Environments built")
 
     def check_built_environments(self):
         # Build the environments in parallel
@@ -235,6 +243,7 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         """
         Builds a given environment name in the given location
         """
+        atg_misc.print_msg("Building env: {:s}".format(env_name))
 
         # What's our env going to be called?
         env_script = "{env:s}.env".format(env=env_name)
@@ -265,6 +274,8 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         )
 
         self.check_env(env_name, env_location, returncode=returncode)
+
+        atg_misc.print_msg("Environment {:s}: done".format(env_name))
 
     def check_success_build(self, returncode, built_env):
 

@@ -20,7 +20,9 @@ ENV_EXT = ".env"
 VC_PATH = os.getenv("VECTORCAST_DIR")
 
 
-@atg_misc.for_all_methods(atg_misc.log_entry_exit)
+@atg_misc.for_all_methods(
+    atg_misc.log_entry_exit, exclude_methods=["get_incr_call_count"]
+)
 class Baseline:
     def __init__(self, env_file, verbose=1):
         self.env_file = os.path.basename(env_file)
@@ -116,16 +118,25 @@ class Baseline:
         self.run_clicast(["-e", self.env_dir, "tools", "auto_baseline_test", FILE_BL])
 
         if run_atg:
+            atg_misc.print_msg("Running ATG")
             self.run_clicast(["-e", self.env_dir, "tools", "auto_atg_test", atg_file])
 
         #
         # Merge baselining with ATG
         #
+        atg_misc.print_msg(
+            "Baseline processing: {:s}, merging attributes".format(self.env_dir)
+        )
         self.merge_attributes(atg_file)
 
         #
         # Run the .tst, generate the expecteds and then re-generate the .tst
         #
+        atg_misc.print_msg(
+            "Baseline processing: {:s}, running and regenerating tests".format(
+                self.env_dir
+            )
+        )
         self.run_clicast(["-e", self.env_dir, "test", "script", "run", FILE_MERGED])
         self.run_clicast(
             ["-e", self.env_dir, "execute", "batch", "--update_coverage_data"]
@@ -145,6 +156,11 @@ class Baseline:
             print(e)
             return
 
+        atg_misc.print_msg(
+            "Baseline processing: {:s}, rebuilding, importing, regenerating".format(
+                self.env_dir
+            )
+        )
         self.run_clicast(["-l", "c", "ENVironment", "script", "run", self.env_file])
         self.run_clicast(["-e", self.env_dir, "test", "script", "run", FILE_EXPECTEDS])
         self.run_clicast(
@@ -158,6 +174,9 @@ class Baseline:
 
         terminate = False
         for i in range(1, max_iter + 1):
+            atg_misc.print_msg(
+                "Baseline processing: {:s}, iteration={:d}".format(self.env_dir, i)
+            )
             now = "stripped_{:d}.tst".format(i)
             next_file = "stripped_{:d}.tst".format(i + 1)
 
@@ -198,6 +217,8 @@ class Baseline:
                     "..", "..", "environment", "{env_dir:s}", "{env_dir:s}.tst"
                 ).format(env_dir=self.env_dir),
             )
+
+        atg_misc.print_msg("Finished baseline processing: {:s}".format(self.env_dir))
 
 
 def get_env_file():
