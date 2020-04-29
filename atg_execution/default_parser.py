@@ -43,9 +43,7 @@ def get_default_parser():
     )
     parser.add("-l", "--logging", required=False, help="log calls", type=boolean_string)
     parser.add("-lf", "--log_file", required=False, help="log file", type=str)
-    parser.add(
-        "-v", "--verbose", required=False, help="verbose", type=boolean_string
-    )
+    parser.add("-v", "--verbose", required=False, help="verbose", type=boolean_string)
 
     return parser
 
@@ -54,6 +52,34 @@ def boolean_string(s):
     if s not in {"False", "True"}:
         raise ValueError("Not a valid boolean string")
     return s == "True"
+
+
+def validate_options(options):
+    """
+    Checks if option combinations are valid
+    """
+
+    options_are_value = True
+    msg = None
+
+    if options.skip_build == options.clean_up:
+        if not options.skip_build:
+            # skip_build = False, clean_up = False
+            msg = "you must clean-up if you're *not* skipping the build"
+        else:
+            # skip_build = True, clean_up = True
+            msg = "you cannot skip the build if you've cleaned-up"
+        options_are_value = False
+
+    if not isinstance(options.verbose, bool):
+        msg = "Verbose must be a bool"
+        options_are_value = False
+
+    if not options_are_value:
+        assert msg is not None
+        print("INVALID CONFIGURATION -- {:s}".format(msg))
+
+    return options_are_value
 
 
 # EOF

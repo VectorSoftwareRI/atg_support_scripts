@@ -10,57 +10,13 @@ import atg_execution.default_parser as default_parser
 import atg_execution.discover as atg_discover
 import atg_execution.process_project as atg_processor
 import atg_execution.misc as atg_misc
+import atg_execution.configuration as atg_config
 
 import logging
 from multiprocessing_logging import install_mp_handler
 
 
-def validate_options(options):
-    """
-    Checks if option combinations are valid
-    """
-
-    options_are_value = True
-
-    if options.skip_build == options.clean_up:
-        if not options.skip_build:
-            # skip_build = False, clean_up = False
-            msg = "you must clean-up if you're *not* skipping the build"
-        else:
-            # skip_build = True, clean_up = True
-            msg = "you cannot skip the build if you've cleaned-up"
-        print("INVALID CONFIGURATION -- {:s}".format(msg))
-        options_are_value = False
-
-    return options_are_value
-
-
-def atg_execution(options):
-    """
-    Performs ATG
-    """
-
-    config_py = options.config_py.replace(os.sep, ".").replace(".py", "")
-    configuration_module = importlib.import_module(config_py)
-
-    assert hasattr(configuration_module, "get_configuration")
-    assert hasattr(configuration_module, "persist_changes")
-
-    configuration = configuration_module.get_configuration()
-    assert "repository_path" in configuration
-    assert "manage_vcm_path" in configuration
-    assert "final_tst_path" in configuration
-    assert "scm_analysis_class" in configuration
-    assert "current_id" in configuration
-    assert "new_id" in configuration
-
-    repository_path = configuration["repository_path"]
-    manage_vcm_path = configuration["manage_vcm_path"]
-    final_tst_path = configuration["final_tst_path"]
-    scm_analysis_class = configuration["scm_analysis_class"]
-    current_id = configuration["current_id"]
-    new_id = configuration["new_id"]
-
+def process_options(options):
     #  Logging
     if options.logging:
 
@@ -72,16 +28,33 @@ def atg_execution(options):
             logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
             install_mp_handler()
 
-    if options.verbose:
-        atg_misc.be_verbose = True
+    # verbosity
+    atg_misc.be_verbose = options.verbose
+
+
+def atg_execution(options):
+    """
+    Performs ATG
+    """
+
+    process_options(options)
+
+    config_py = options.config_py.replace(os.sep, ".").replace(".py", "")
+    configuration_module = importlib.import_module(config_py)
+    assert hasattr(configuration_module, "get_configuration")
+
+    configuration = configuration_module.get_configuration()
+    if not isinstance(configuration, atg_config.configuration):
+        configuration = atg_config.parse_configuration(configuration)
+
+    if configuration.unchanged_files is not None:
+        unchanged_files = configuration.unchanged_files()
     else:
-        atg_misc.be_verbose = False
-
-    # Create an scm analysis object
-    scm_analyser = scm_analysis_class(repository_path, options.allow_moves)
-
-    # Calculate preserved files
-    preserved_files = scm_analyser.calculate_preserved_files(current_id, new_id)
+        if options.verbose:
+            atg_misc.print_msg(
+                "'unchanged_files' was not configured; all files will be processed"
+            )
+        unchanged_files = set()
 
     # Create our Manage project
     manage_builder = build_manage.ManageBuilder(
@@ -91,6 +64,9 @@ def atg_execution(options):
         allow_broken_environments=options.allow_broken_environments,
     )
     manage_builder.process()
+
+    import sys
+    sys.exit(-1)
 
     # Discover the environments (not neccessarily tied to Manage!)
     manage_dependencies = atg_discover.DiscoverEnvironmentDependencies(
@@ -105,10 +81,10 @@ def atg_execution(options):
     for environment, dependencies in manage_dependencies.envs_to_fnames.items():
 
         # ... check it if *only* uses preserved files
-        uses_only_preserved_files = dependencies.issubset(preserved_files)
+        uses_only_unchanged_files = dependencies.issubset(unchanged_files)
 
         # If not ...
-        if not uses_only_preserved_files:
+        if not uses_only_unchanged_files:
             # ... flag it as impacted!
             impacted_envs.add(environment)
 
@@ -121,7 +97,7 @@ def atg_execution(options):
             current_id,
             new_id,
             scm_analyser,
-            preserved_files,
+            unchanged_files,
             options.limit_unchanged,
             manage_vcm_path,
             manage_builder,
@@ -157,7 +133,7 @@ def atg_execution(options):
 def main():
     parser = default_parser.get_default_parser()
     options = parser.parse_args()
-    if validate_options(options):
+    if default_parser.validate_options(options):
         return atg_execution(options)
     else:
         return -1
