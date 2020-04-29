@@ -292,6 +292,14 @@ class ProcessProject(atg_misc.ParallelExecutor):
             copy_out_manage=False,
         )
 
+        tests_generated = open(merged_tst_name).read().count("TEST.NAME:")
+
+        atg_misc.print_msg(
+            "Completed test-case generation for {:s} (tests generated: {:d})".format(
+                env_name, tests_generated
+            )
+        )
+
     def prune_and_merge_one_environment(self, env_path):
         """
         Given an environment path, baselines the environment

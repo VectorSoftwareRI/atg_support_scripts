@@ -121,7 +121,7 @@ class Baseline:
     ):
 
         atg_misc.print_msg(
-            "Generating test-cases for environment {:s}".format(self.env_dir)
+            "Generating baseline test-cases for environment {:s}".format(self.env_dir)
         )
 
         assert (
@@ -230,8 +230,6 @@ class Baseline:
                     "..", "..", "environment", "{env_dir:s}", "{env_dir:s}.tst"
                 ).format(env_dir=self.env_dir),
             )
-
-        atg_misc.print_msg("Environment {:s} processed with ATG".format(self.env_dir))
 
 
 # EOF
