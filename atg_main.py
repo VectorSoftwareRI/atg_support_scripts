@@ -4,12 +4,12 @@ import os
 import sys
 import importlib
 
-import incremental_atg.build_manage as build_manage
-import incremental_atg.debug_report as atg_debug_report
-import incremental_atg.default_parser as default_parser
-import incremental_atg.discover as atg_discover
-import incremental_atg.process_project as atg_processor
-import incremental_atg.misc as atg_misc
+import atg_execution.build_manage as build_manage
+import atg_execution.debug_report as atg_debug_report
+import atg_execution.default_parser as default_parser
+import atg_execution.discover as atg_discover
+import atg_execution.process_project as atg_processor
+import atg_execution.misc as atg_misc
 
 import logging
 from multiprocessing_logging import install_mp_handler
@@ -35,7 +35,7 @@ def validate_options(options):
     return options_are_value
 
 
-def incremental_atg(options):
+def atg_execution(options):
     """
     Performs ATG
     """
@@ -72,7 +72,7 @@ def incremental_atg(options):
             logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
             install_mp_handler()
 
-    if options.verbosity:
+    if options.verbose:
         atg_misc.be_verbose = True
     else:
         atg_misc.be_verbose = False
@@ -158,7 +158,7 @@ def main():
     parser = default_parser.get_default_parser()
     options = parser.parse_args()
     if validate_options(options):
-        return incremental_atg(options)
+        return atg_execution(options)
     else:
         return -1
 

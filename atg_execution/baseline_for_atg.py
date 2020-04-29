@@ -3,8 +3,8 @@
 import os
 import shutil
 import filecmp
-import incremental_atg.merge_display_attributes as atg_merge_attrs
-import incremental_atg.misc as atg_misc
+import atg_execution.merge_display_attributes as atg_merge_attrs
+import atg_execution.misc as atg_misc
 
 
 FILE_BL = "bl.tst"

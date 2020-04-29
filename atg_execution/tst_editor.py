@@ -3,7 +3,7 @@
 import sys
 import re
 
-import incremental_atg.misc as atg_misc
+import atg_execution.misc as atg_misc
 
 
 @atg_misc.for_all_methods(atg_misc.log_entry_exit)

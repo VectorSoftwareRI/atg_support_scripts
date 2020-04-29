@@ -3,9 +3,9 @@
 import os
 import shutil
 
-import incremental_atg.baseline_for_atg as baseline_for_atg
-import incremental_atg.misc as atg_misc
-import incremental_atg.tst_editor as tst_editor
+import atg_execution.baseline_for_atg as baseline_for_atg
+import atg_execution.misc as atg_misc
+import atg_execution.tst_editor as tst_editor
 
 
 @atg_misc.for_all_methods(atg_misc.log_entry_exit)

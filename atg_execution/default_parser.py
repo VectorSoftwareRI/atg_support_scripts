@@ -44,7 +44,7 @@ def get_default_parser():
     parser.add("-l", "--logging", required=False, help="log calls", type=boolean_string)
     parser.add("-lf", "--log_file", required=False, help="log file", type=str)
     parser.add(
-        "-v", "--verbosity", required=False, help="verbosity", type=boolean_string
+        "-v", "--verbose", required=False, help="verbose", type=boolean_string
     )
 
     return parser

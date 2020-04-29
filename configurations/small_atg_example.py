@@ -1,7 +1,7 @@
 import os
 
-import incremental_atg.misc as atg_misc
-import incremental_atg.scm_hooks as atg_scm_hooks
+import atg_execution.misc as atg_misc
+import atg_execution.scm_hooks as atg_scm_hooks
 
 
 def get_configuration():
