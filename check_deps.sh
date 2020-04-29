@@ -1,0 +1,54 @@
+#!/bin/bash
+
+C_RED="\e[1;31m"
+C_GREEN="\e[1;32m"
+C_ZERO="\e[0m"
+
+M_OK="${C_GREEN}ok${C_ZERO}"
+M_FAILED="${C_RED}failed${C_ZERO}"
+
+VC_VER=20
+
+echo -n "Checking VECTORCAST_DIR env variable... "
+if [[ -z "$VECTORCAST_DIR" ]];then
+    echo -e "$M_FAILED"
+else
+    echo -e "$M_OK"
+fi
+
+echo -n "Checking clicast... "
+CLICAST_RES=$($VECTORCAST_DIR/clicast --version 2>&1)
+clicast_test=$?
+if [[ $clicast_test -ne 0 ]];then
+    echo -e "$M_FAILED"
+else
+    echo -e "$M_OK"
+fi
+
+echo -n "Checking VectorCAST version >= $VC_VER... "
+CLICAST_VER=$(echo $CLICAST_RES | cut -f2 -d' ')
+if [[ $CLICAST_VER -ge $VC_VER ]];then
+    echo -e "$M_OK"
+else
+    echo -e "$M_FAILED"
+fi
+
+echo -n "Checking Python3... "
+PYTHON_VER=$(python3 --version 2>&1)
+python3_test=$?
+if [[ $python3_test -ne 0 ]];then
+    echo -e "$M_FAILED"
+else
+    echo -e "$M_OK, $PYTHON_VER"
+fi
+
+echo -n "Checking git... "
+GIT_VER=$(git --version 2>&1)
+git_test=$?
+if [[ $git_test -ne 0 ]];then
+    echo -e "$M_FAILED"
+else
+    echo -e "$M_OK, $GIT_VER"
+fi
+
+# EOF
