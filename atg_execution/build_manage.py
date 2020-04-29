@@ -9,18 +9,12 @@ import atg_execution.misc as atg_misc
 
 @atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class ManageBuilder(atg_misc.ParallelExecutor):
-    def __init__(
-        self,
-        manage_vcm_path,
-        clean_up=False,
-        skip_build=False,
-        allow_broken_environments=False,
-    ):
+    def __init__(self, configuration):
 
         # Call the super constructor
         super().__init__()
 
-        self.manage_vcm_path = manage_vcm_path
+        self.manage_vcm_path = configuration.manage_vcm_path
 
         # Manage file must exist
         assert os.path.exists(self.manage_vcm_path) and os.path.isfile(
@@ -43,20 +37,23 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         self.build_folder = os.path.join(self.manage_root_dir, "build")
 
         # Should we skip doing the build?
-        self.skip_build = skip_build
+        self.skip_build = configuration.options.skip_build
+
+        # Should we clean-up?
+        self.clean_up = configuration.options.clean_up
 
         # Do we allow for broken environments?
-        self.allow_broken_environments = allow_broken_environments
+        self.allow_broken_environments = configuration.options.allow_broken_environments
 
         if self.skip_build:
-            assert not clean_up
+            assert not self.clean_up
             assert os.path.isdir(self.build_folder)
         else:
             # We do not expect to see a build folder!
             if os.path.exists(self.build_folder) or os.path.isdir(self.build_folder):
 
                 # If we haven't asked to do clean-up, then we error-out
-                if not clean_up:
+                if not self.clean_up:
                     raise RuntimeError(
                         "{:s} already exists, not proceeding".format(self.build_folder)
                     )
@@ -195,7 +192,7 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         """
         Processes the Manage project
         """
-        atg_misc.print_msg("Processing manage project")
+        atg_misc.print_msg("Processing Manage project")
 
         if not self.skip_build:
             # Get a temporary file with a Python suffix
@@ -226,7 +223,7 @@ class ManageBuilder(atg_misc.ParallelExecutor):
             # Find those that have already built
             self.check_built_environments()
 
-        atg_misc.print_msg("Done processing manage project")
+        atg_misc.print_msg("Done processing Manage project")
 
     def check_env(self, env_name, env_location, returncode=False):
 

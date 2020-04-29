@@ -45,10 +45,10 @@ def atg_execution(options):
 
     configuration = configuration_module.get_configuration()
     if not isinstance(configuration, atg_config.configuration):
-        configuration = atg_config.parse_configuration(configuration)
+        configuration = atg_config.parse_configuration(configuration, options)
 
-    if configuration.unchanged_files is not None:
-        unchanged_files = configuration.unchanged_files()
+    if configuration.find_unchanged_files is not None:
+        unchanged_files = configuration.find_unchanged_files()
     else:
         if options.verbose:
             atg_misc.print_msg(
@@ -57,28 +57,20 @@ def atg_execution(options):
         unchanged_files = set()
 
     # Create our Manage project
-    manage_builder = build_manage.ManageBuilder(
-        manage_vcm_path,
-        clean_up=options.clean_up,
-        skip_build=options.skip_build,
-        allow_broken_environments=options.allow_broken_environments,
-    )
+    manage_builder = build_manage.ManageBuilder(configuration)
     manage_builder.process()
 
-    import sys
-    sys.exit(-1)
-
     # Discover the environments (not neccessarily tied to Manage!)
-    manage_dependencies = atg_discover.DiscoverEnvironmentDependencies(
-        repository_path, manage_builder.built_environments
+    environment_dependencies = atg_discover.DiscoverEnvironmentDependencies(
+        configuration, manage_builder
     )
-    manage_dependencies.process()
+    environment_dependencies.process()
 
     # Our set of impacted environments
     impacted_envs = set()
 
     # For each environment with its dependencies ...
-    for environment, dependencies in manage_dependencies.envs_to_fnames.items():
+    for environment, dependencies in environment_dependencies.envs_to_fnames.items():
 
         # ... check it if *only* uses preserved files
         uses_only_unchanged_files = dependencies.issubset(unchanged_files)
@@ -93,15 +85,10 @@ def atg_execution(options):
 
         # Generate the report
         atg_debug_report.debug_report(
-            repository_path,
-            current_id,
-            new_id,
-            scm_analyser,
+            configuration,
             unchanged_files,
-            options.limit_unchanged,
-            manage_vcm_path,
             manage_builder,
-            manage_dependencies,
+            environment_dependencies,
             impacted_envs,
         )
 
@@ -112,7 +99,7 @@ def atg_execution(options):
     # Create an incremental ATG object
     ia = atg_processor.ProcessProject(
         impacted_envs,
-        manage_dependencies.envs_to_units,
+        environment_dependencies.envs_to_units,
         options.timeout,
         options.baseline_iterations,
         final_tst_path,

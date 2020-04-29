@@ -19,16 +19,16 @@ class DiscoverEnvironmentDependencies(atg_misc.ParallelExecutor):
         * The routines for each unit (in each environment)
     """
 
-    def __init__(self, repository_prefix, environments):
+    def __init__(self, configuration, manage_builder):
 
         # Call the super constructor
         super().__init__()
 
         # What's the directory that contains our source files?
-        self.repository_prefix = repository_prefix
+        self.repository_path = configuration.repository_path
 
         # What are our environments?
-        self.environments = environments
+        self.environments = manage_builder.built_environments
 
         # For each _file_, which environments depend on this file?
         self.fnames_to_envs = {}
@@ -40,7 +40,7 @@ class DiscoverEnvironmentDependencies(atg_misc.ParallelExecutor):
         self.envs_to_units = {}
 
     def __repr__(self):
-        return str({"repository_prefix": self.repository_prefix})
+        return str({"repository_path": self.repository_path})
 
     def find_files(self, env_path):
         """
@@ -68,13 +68,13 @@ class DiscoverEnvironmentDependencies(atg_misc.ParallelExecutor):
                 fname = dependency["#text"]
 
                 # Does the file path originate from our repository?
-                if fname.startswith(self.repository_prefix):
+                if fname.startswith(self.repository_path):
 
                     #
                     # Obtain a _relative_ name -- this allows us to match to the
                     # git diff!
                     #
-                    rel_fname = os.path.relpath(fname, self.repository_prefix)
+                    rel_fname = os.path.relpath(fname, self.repository_path)
 
                     # We're about to update the shared state, so grab the lock
                     with self.update_shared_state():
@@ -158,6 +158,8 @@ FROM   functions
         Calculates the 'interesting information' for a given set of environments
         """
 
+        atg_misc.print_msg("Discovering environment dependencies")
+
         execution_context = []
 
         # For each environment/build directory
@@ -172,6 +174,8 @@ FROM   functions
             execution_context.append([env_path])
 
         self.run_routine_parallel(self.process_env, execution_context)
+
+        atg_misc.print_msg("Done discovering environment dependencies")
 
 
 # EOF
