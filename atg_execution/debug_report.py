@@ -38,19 +38,27 @@ def files_report(configuration, unchanged_files, environment_dependencies):
     print("*" * 10 + " Files report " + "*" * 10)
     repository_path = configuration.repository_path
     all_files = find_all_files_from_root(repository_path)
-    assert unchanged_files.issubset(all_files)
-
     changed_files = all_files - unchanged_files
 
+    exts = [".c", ".h"]
+    src_files = [
+        fname for fname in all_files if any([fname.endswith(ext) for ext in exts])
+    ]
+
+    changed_src_files = changed_files.intersection(src_files)
+    unchanged_src_files = unchanged_files.intersection(src_files)
+
     count_all_files = len(all_files)
-    count_changed_files = len(changed_files)
-    count_unchanged_files = len(unchanged_files)
+    count_src_files = len(src_files)
+    count_changed_src_files = len(changed_src_files)
+    count_unchanged_src_files = len(unchanged_src_files)
 
     environment_stats_data = [
         ["Category", "Count"],
         ["All files", count_all_files],
-        ["Files needing processing", count_changed_files],
-        ["Files not needing processing", count_unchanged_files],
+        ["Sources files", count_src_files],
+        ["Source files needing processing", count_changed_src_files],
+        ["Source files not needing processing", count_unchanged_src_files],
     ]
     print(AsciiTable(environment_stats_data).table)
 
@@ -60,7 +68,9 @@ def files_report(configuration, unchanged_files, environment_dependencies):
     for fname in all_files:
         impacted = fname in changed_files
         rel_fname = os.path.relpath(fname, repository_path)
-        used_by = environment_dependencies.fnames_to_envs[rel_fname]
+        used_by = environment_dependencies.fnames_to_envs.get(rel_fname, [])
+        if not used_by:
+            continue
         used_by_count = len(used_by)
         used_by_str = join_wrap_list([os.path.basename(env) for env in used_by])
         environment_details_data.append(
