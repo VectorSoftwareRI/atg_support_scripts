@@ -5,6 +5,10 @@ import atg_execution.scm_hooks as atg_scm_hooks
 from functools import partial
 
 
+def store_updated_tests(changed_files):
+    print(changed_files)
+
+
 def get_configuration(options):
     # What's the path to our repo?
     repository_path = os.path.abspath(
@@ -36,6 +40,7 @@ def get_configuration(options):
         "repository_path": repository_path,
         "manage_vcm_path": manage_vcm_path,
         "find_unchanged_files": find_unchanged_files,
+        "store_updated_tests": store_updated_tests,
     }
 
     return configuration

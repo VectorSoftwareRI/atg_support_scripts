@@ -105,21 +105,14 @@ def atg_execution(options):
 
     # Create an incremental ATG object
     ia = atg_processor.ProcessProject(
-        impacted_envs,
-        environment_dependencies.envs_to_units,
-        options.timeout,
-        options.baseline_iterations,
-        final_tst_path,
+        configuration, impacted_envs, environment_dependencies,
     )
 
     # Process our environments
     ia.process()
 
-    #
-    # TODO: get the changed files and pass them in to the persistence
-    # module
-    #
-    configuration_module.persist_changes(ia.updated_files)
+    # Store files
+    configuration.store_updated_tests(ia.updated_files)
 
     return 0
 

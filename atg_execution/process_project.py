@@ -16,12 +16,7 @@ class ProcessProject(atg_misc.ParallelExecutor):
     """
 
     def __init__(
-        self,
-        impacted_environments,
-        envs_to_units,
-        timeout,
-        baseline_iterations,
-        final_tst_path,
+        self, configuration, impacted_environments, environment_dependencies,
     ):
         # Call the super constructor
         super().__init__()
@@ -30,7 +25,7 @@ class ProcessProject(atg_misc.ParallelExecutor):
         self.impacted_environments = impacted_environments
 
         # Mapping from environments to units and their functions
-        self.envs_to_units = envs_to_units
+        self.envs_to_units = environment_dependencies.envs_to_units
 
         # Mapping from environments to generated .tst files
         self.env_tsts = {}
@@ -39,13 +34,13 @@ class ProcessProject(atg_misc.ParallelExecutor):
         self.merged_tsts = {}
 
         # Number of seconds to perform ATG
-        self.timeout = timeout
+        self.timeout = configuration.options.timeout
 
         # Number of baseling iterations to perform?
-        self.baseline_iterations = baseline_iterations
+        self.baseline_iterations = configuration.options.baseline_iterations
 
         # Where are the tsts going to go?
-        self.final_tst_path = final_tst_path
+        self.final_tst_path = configuration.final_tst_path
 
         # Make our output path
         if not os.path.exists(self.final_tst_path):
