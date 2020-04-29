@@ -277,6 +277,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
         Given an environment path, baselines the environment
         """
         env_name = os.path.basename(env_path)
+
+        atg_misc.print_msg("Merging new and existing tests for {:s}".format(env_name))
+
         build_dir = os.path.dirname(env_path)
 
         merged_atg_file = os.path.join(build_dir, baseline_for_atg.FILE_FINAL)

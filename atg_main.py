@@ -52,14 +52,14 @@ def atg_execution(options):
 
     if configuration.find_unchanged_files is not None:
         if options.verbose:
-            atg_misc.print_msg(
-                "'unchanged_files' was configured; finding unchanged files"
+            atg_misc.print_warn(
+                "Finding unchanged files was configured, discovering changed files"
             )
         unchanged_files = configuration.find_unchanged_files()
     else:
         if options.verbose:
-            atg_misc.print_msg(
-                "'unchanged_files' was not configured; all files will be processed"
+            atg_misc.print_warn(
+                "Finding unchanged files was not configured, all files will be processed"
             )
         unchanged_files = set()
 

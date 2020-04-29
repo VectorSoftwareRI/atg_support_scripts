@@ -94,12 +94,6 @@ class ManageBuilder(atg_misc.ParallelExecutor):
             manage=self.manage_exe, project=self.project_name, cmd_suffix=cmd_suffix
         )
 
-        atg_misc.print_msg(
-            "Running manage command: -p {project:s} {cmd_suffix:s}".format(
-                project=self.project_name, cmd_suffix=cmd_suffix
-            )
-        )
-
         # Run it
         _, _, returncode = atg_misc.run_cmd(full_cmd, self.cwd)
 
@@ -180,9 +174,9 @@ class ManageBuilder(atg_misc.ParallelExecutor):
 
     def build_environments(self):
         # Build the environments in parallel
-        atg_misc.print_msg("Building environments")
+        atg_misc.print_msg("Building Manage environments")
         self.run_routine_parallel(self.build_env, self.all_environments)
-        atg_misc.print_msg("Environments built")
+        atg_misc.print_msg("Manage environments built")
 
     def check_built_environments(self):
         # Build the environments in parallel
@@ -223,24 +217,29 @@ class ManageBuilder(atg_misc.ParallelExecutor):
             # Find those that have already built
             self.check_built_environments()
 
-        atg_misc.print_msg("Done processing Manage project")
+        atg_misc.print_msg("Manage project processed")
 
     def check_env(self, env_name, env_location, returncode=False):
 
         built_env = os.path.join(env_location, env_name)
 
+        success = False
+
         if self.check_success_build(returncode, built_env):
             self.built_environments.add((env_name, env_location))
+            success = True
         elif not self.allow_broken_environments:
             raise RuntimeError(
                 "{env:s} did not build. Cowardly aborting.".format(env=built_env)
             )
 
+        return success
+
     def build_env(self, env_name, env_location):
         """
         Builds a given environment name in the given location
         """
-        atg_misc.print_msg("Building env: {:s}".format(env_name))
+        atg_misc.print_msg("Building environment {:s}".format(env_name))
 
         # What's our env going to be called?
         env_script = "{env:s}.env".format(env=env_name)
@@ -270,9 +269,11 @@ class ManageBuilder(atg_misc.ParallelExecutor):
             cmd, env_location, log_file_prefix=output_prefix
         )
 
-        self.check_env(env_name, env_location, returncode=returncode)
+        success = self.check_env(env_name, env_location, returncode=returncode)
 
-        atg_misc.print_msg("Environment {:s}: done".format(env_name))
+        atg_misc.print_msg(
+            "Environment {:s} built (success: {:s})".format(env_name, str(success))
+        )
 
     def check_success_build(self, returncode, built_env):
 

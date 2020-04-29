@@ -100,7 +100,9 @@ class Baseline:
         copy_out_manage=True,
     ):
 
-        atg_misc.print_msg("Baseline test processing: {:s}".format(self.env_dir))
+        atg_misc.print_msg(
+            "Generating test-cases for environment {:s}".format(self.env_dir)
+        )
 
         assert (
             max_iter > 0
@@ -118,25 +120,20 @@ class Baseline:
         self.run_clicast(["-e", self.env_dir, "tools", "auto_baseline_test", FILE_BL])
 
         if run_atg:
-            atg_misc.print_msg("Running ATG")
             self.run_clicast(["-e", self.env_dir, "tools", "auto_atg_test", atg_file])
 
         #
         # Merge baselining with ATG
         #
-        atg_misc.print_msg(
-            "Baseline processing: {:s}, merging attributes".format(self.env_dir)
-        )
         self.merge_attributes(atg_file)
+
+        atg_misc.print_msg(
+            "Executing test-cases for environment {:s}".format(self.env_dir)
+        )
 
         #
         # Run the .tst, generate the expecteds and then re-generate the .tst
         #
-        atg_misc.print_msg(
-            "Baseline processing: {:s}, running and regenerating tests".format(
-                self.env_dir
-            )
-        )
         self.run_clicast(["-e", self.env_dir, "test", "script", "run", FILE_MERGED])
         self.run_clicast(
             ["-e", self.env_dir, "execute", "batch", "--update_coverage_data"]
@@ -144,6 +141,10 @@ class Baseline:
         self.run_clicast(["-e", self.env_dir, "TESt", "ACtuals_to_expected"])
         self.run_clicast(
             ["-e", self.env_dir, "test", "script", "create", FILE_EXPECTEDS]
+        )
+
+        atg_misc.print_msg(
+            "Generating expected values for environment {:s}".format(self.env_dir)
         )
 
         #
@@ -156,11 +157,6 @@ class Baseline:
             print(e)
             return
 
-        atg_misc.print_msg(
-            "Baseline processing: {:s}, rebuilding, importing, regenerating".format(
-                self.env_dir
-            )
-        )
         self.run_clicast(["-l", "c", "ENVironment", "script", "run", self.env_file])
         self.run_clicast(["-e", self.env_dir, "test", "script", "run", FILE_EXPECTEDS])
         self.run_clicast(
@@ -174,9 +170,6 @@ class Baseline:
 
         terminate = False
         for i in range(1, max_iter + 1):
-            atg_misc.print_msg(
-                "Baseline processing: {:s}, iteration={:d}".format(self.env_dir, i)
-            )
             now = "stripped_{:d}.tst".format(i)
             next_file = "stripped_{:d}.tst".format(i + 1)
 
@@ -218,7 +211,7 @@ class Baseline:
                 ).format(env_dir=self.env_dir),
             )
 
-        atg_misc.print_msg("Finished baseline processing: {:s}".format(self.env_dir))
+        atg_misc.print_msg("Environment {:s} processed with ATG".format(self.env_dir))
 
 
 def get_env_file():

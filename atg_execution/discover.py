@@ -175,7 +175,7 @@ FROM   functions
 
         self.run_routine_parallel(self.process_env, execution_context)
 
-        atg_misc.print_msg("Done discovering environment dependencies")
+        atg_misc.print_msg("Environment dependencies discovered")
 
 
 # EOF
