@@ -29,7 +29,7 @@ def get_default_parser():
         help="baseline iterations",
         type=int,
     )
-    parser.add("-cu", "--cleanup", required=True, help="clean up", type=boolean_string)
+    parser.add("-cu", "--clean_up", required=True, help="clean up", type=boolean_string)
     parser.add(
         "-sb", "--skip_build", required=True, help="skip build", type=boolean_string
     )

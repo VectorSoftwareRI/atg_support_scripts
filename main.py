@@ -15,6 +15,26 @@ import logging
 from multiprocessing_logging import install_mp_handler
 
 
+def validate_options(options):
+    """
+    Checks if option combinations are valid
+    """
+
+    options_are_value = True
+
+    if options.skip_build == options.clean_up:
+        if not options.skip_build:
+            # skip_build = False, clean_up = False
+            msg = "you must clean-up if you're *not* skipping the build"
+        else:
+            # skip_build = True, clean_up = True
+            msg = "you cannot skip the build if you've cleaned-up"
+        print("INVALID CONFIGURATION -- {:s}".format(msg))
+        options_are_value = False
+
+    return options_are_value
+
+
 def incremental_atg(options):
     """
     Performs ATG
@@ -66,7 +86,7 @@ def incremental_atg(options):
     # Create our Manage project
     manage_builder = build_manage.ManageBuilder(
         manage_vcm_path,
-        cleanup=options.cleanup,
+        clean_up=options.clean_up,
         skip_build=options.skip_build,
         allow_broken_environments=options.allow_broken_environments,
     )
@@ -137,7 +157,10 @@ def incremental_atg(options):
 def main():
     parser = default_parser.get_default_parser()
     options = parser.parse_args()
-    return incremental_atg(options)
+    if validate_options(options):
+        return incremental_atg(options)
+    else:
+        return -1
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ class ManageBuilder(atg_misc.ParallelExecutor):
     def __init__(
         self,
         manage_vcm_path,
-        cleanup=False,
+        clean_up=False,
         skip_build=False,
         allow_broken_environments=False,
     ):
@@ -49,14 +49,14 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         self.allow_broken_environments = allow_broken_environments
 
         if self.skip_build:
-            assert not cleanup
+            assert not clean_up
             assert os.path.isdir(self.build_folder)
         else:
             # We do not expect to see a build folder!
             if os.path.exists(self.build_folder) or os.path.isdir(self.build_folder):
 
                 # If we haven't asked to do clean-up, then we error-out
-                if not cleanup:
+                if not clean_up:
                     raise RuntimeError(
                         "{:s} already exists, not proceeding".format(self.build_folder)
                     )
@@ -310,7 +310,7 @@ class ManageBuilder(atg_misc.ParallelExecutor):
 
 if __name__ == "__main__":
     manage_vcm_path = "/home/avj/clones/atg_workflow_vc/vcast/atg_workflow_vc.vcm"
-    ManageBuilder(manage_vcm_path, cleanup=True).process()
+    ManageBuilder(manage_vcm_path, clean_up=True).process()
 
 
 # EOF
