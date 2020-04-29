@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os
 import shutil
 import tempfile
@@ -304,11 +302,6 @@ class ManageBuilder(atg_misc.ParallelExecutor):
 
         # Environment is good if we have all of these
         return all([zero_return_code, folder_exists, found_all, build_success])
-
-
-if __name__ == "__main__":
-    manage_vcm_path = "/home/avj/clones/atg_workflow_vc/vcast/atg_workflow_vc.vcm"
-    ManageBuilder(manage_vcm_path, clean_up=True).process()
 
 
 # EOF

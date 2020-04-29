@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os
 import shutil
 import filecmp
@@ -213,25 +211,5 @@ class Baseline:
 
         atg_misc.print_msg("Environment {:s} processed with ATG".format(self.env_dir))
 
-
-def get_env_file():
-    """
-    Finds the first .env file in the current directory
-    """
-    env_file = None
-    for f in os.listdir("."):
-        if f.endswith(ENV_EXT):
-            env_file = f
-    assert env_file is not None
-    return env_file
-
-
-def main():
-    b = Baseline(env_file=get_env_file())
-    b.run(run_atg=True)
-
-
-if __name__ == "__main__":
-    main()
 
 # EOF

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import sys
 import re
 
@@ -69,20 +67,5 @@ class TstFile(object):
                     else:
                         skip_line = False
 
-
-def main():
-
-    if len(sys.argv) - 1 < 4:
-        print("{:s} <input> <output> <subprograms> <regex>")
-        sys.exit(1)
-
-    input_file, output_file, subprograms_str, pattern = sys.argv[1:]
-
-    tst_file = TstFile(input_file, output_file)
-    tst_file.remove(subprograms_str, pattern)
-
-
-if __name__ == "__main__":
-    main()
 
 # EOF
