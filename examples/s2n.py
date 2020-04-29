@@ -1,7 +1,7 @@
 import os
 
 
-def get_configuration():
+def get_configuration(options):
     # What's the path to our repo?
     repository_path = os.path.abspath(
         os.path.expandvars("${HOME}/clones/s2n_vc/src/s2n")

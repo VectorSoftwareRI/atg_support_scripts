@@ -1,7 +1,7 @@
 import os
 
 
-def get_configuration():
+def get_configuration(options):
     # What's the path to our repo?
     repository_path = os.path.abspath(
         os.path.expandvars("${HOME}/clones/atg_workflow_vc/src")

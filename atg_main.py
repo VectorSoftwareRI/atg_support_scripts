@@ -2,7 +2,7 @@
 
 import os
 import sys
-import importlib
+import logging
 
 import atg_execution.build_manage as build_manage
 import atg_execution.debug_report as atg_debug_report
@@ -12,8 +12,8 @@ import atg_execution.process_project as atg_processor
 import atg_execution.misc as atg_misc
 import atg_execution.configuration as atg_config
 
-import logging
 from multiprocessing_logging import install_mp_handler
+from runpy import run_path
 
 
 def process_options(options):
@@ -32,20 +32,23 @@ def process_options(options):
     atg_misc.be_verbose = options.verbose
 
 
+def load_configuration(options):
+    configuration_module = run_path(options.config_py)
+    assert "get_configuration" in configuration_module
+    configuration = configuration_module["get_configuration"](options)
+    if not isinstance(configuration, atg_config.configuration):
+        configuration = atg_config.parse_configuration(configuration, options)
+
+    return configuration
+
+
 def atg_execution(options):
     """
     Performs ATG
     """
 
     process_options(options)
-
-    config_py = options.config_py.replace(os.sep, ".").replace(".py", "")
-    configuration_module = importlib.import_module(config_py)
-    assert hasattr(configuration_module, "get_configuration")
-
-    configuration = configuration_module.get_configuration()
-    if not isinstance(configuration, atg_config.configuration):
-        configuration = atg_config.parse_configuration(configuration, options)
+    configuration = load_configuration(options)
 
     if configuration.find_unchanged_files is not None:
         if options.verbose:
