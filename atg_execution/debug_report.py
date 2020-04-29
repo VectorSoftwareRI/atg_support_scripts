@@ -1,16 +1,140 @@
 import os
+from terminaltables import AsciiTable
+from textwrap import wrap
+
 
 def find_all_files_from_root(root, exts=[]):
 
     all_files = set()
 
     for root, _, files in os.walk(root):
+        if root.startswith(".git"):
+            continue
+
         for fname in files:
+            if fname.startswith(".git"):
+                continue
+
             for ext in exts:
                 if fname.lower().endswith(ext):
                     all_files.add(os.path.join(root, fname))
+            else:
+                all_files.add(os.path.join(root, fname))
 
     return set(sorted(all_files))
+
+
+def join_wrap_list(alist, max_width=20):
+    wrapped = "\n".join(wrap(", ".join(alist), max_width, fix_sentence_endings=True))
+    wrapped = ",".join(alist)
+    if len(wrapped) > max_width:
+        suffix = "..."
+        suffix_len = len(suffix)
+        wrapped = wrapped[: max_width - suffix_len] + suffix
+    return wrapped
+
+
+def files_report(configuration, unchanged_files, environment_dependencies):
+    print("*" * 10 + " Files report " + "*" * 10)
+    repository_path = configuration.repository_path
+    all_files = find_all_files_from_root(repository_path)
+    assert unchanged_files.issubset(all_files)
+
+    changed_files = all_files - unchanged_files
+
+    count_all_files = len(all_files)
+    count_changed_files = len(changed_files)
+    count_unchanged_files = len(unchanged_files)
+
+    environment_stats_data = [
+        ["Category", "Count"],
+        ["All files", count_all_files],
+        ["Files needing processing", count_changed_files],
+        ["Files not needing processing", count_unchanged_files],
+    ]
+    print(AsciiTable(environment_stats_data).table)
+
+    environment_details_data = [
+        ["Filename", "Needs\nprocessing?", "Used by\n(count)", "Used by"],
+    ]
+    for fname in all_files:
+        impacted = fname in changed_files
+        rel_fname = os.path.relpath(fname, repository_path)
+        used_by = environment_dependencies.fnames_to_envs[rel_fname]
+        used_by_count = len(used_by)
+        used_by_str = join_wrap_list([os.path.basename(env) for env in used_by])
+        environment_details_data.append(
+            [rel_fname, impacted, used_by_count, used_by_str]
+        )
+    print(AsciiTable(environment_details_data).table)
+
+
+def environments_report(
+    configuration,
+    unchanged_files,
+    manage_builder,
+    environment_dependencies,
+    impacted_envs,
+):
+    print("*" * 10 + " Environments report " + "*" * 10)
+    failed_envs = manage_builder.all_environments - manage_builder.built_environments
+
+    count_all_envs = len(manage_builder.all_environments)
+    count_built_envs = len(manage_builder.built_environments)
+    count_failed_envs = len(failed_envs)
+    count_impacted_envs = len(impacted_envs)
+
+    file_stat_data = [
+        ["Category", "Count"],
+        ["All environments", count_all_envs],
+        ["Environments succesfully built", count_built_envs],
+        ["Environments not built", count_failed_envs],
+        ["Environments needing processing", count_impacted_envs],
+    ]
+    print(AsciiTable(file_stat_data).table)
+
+    file_details_data = [
+        [
+            "Environment",
+            "Path",
+            "Built?",
+            "Needs\nprocessing?",
+            "Units",
+            "Routines",
+            "Dependencies\n(count)",
+            "Dependencies",
+        ],
+    ]
+    for env, path in manage_builder.all_environments:
+        env_path = os.path.join(path, env)
+        needs_processing = env_path in impacted_envs
+        used_files = environment_dependencies.envs_to_fnames[env_path]
+        used_files_count = len(used_files)
+        units = environment_dependencies.envs_to_units[env_path]
+
+        built = (env, path) in manage_builder.built_environments
+
+        path = join_wrap_list([path])
+        deps = join_wrap_list(used_files)
+
+        rout_count = 0
+        for _, functions in units.items():
+            rout_count += len(functions)
+
+        file_details_data.append(
+            [
+                env,
+                path,
+                built,
+                needs_processing,
+                len(units),
+                rout_count,
+                used_files_count,
+                deps,
+            ]
+        )
+
+    print(AsciiTable(file_details_data).table)
 
 
 def debug_report(
@@ -21,95 +145,15 @@ def debug_report(
     impacted_envs,
 ):
 
-    repository_path = configuration.repository_path
-    all_files = find_all_files_from_root(repository_path, exts=[".c", ".h", ".cc", ".cpp", ".cxx", ".hh", ".hxx"])
-    assert unchanged_files.issubset(all_files)
-    current_id = "None"
-    new_id = "None"
-    scm_analyser = "None"
-    limit_unchanged = configuration.options.limit_unchanged
-    manage_vcm_path = configuration.manage_vcm_path
+    files_report(configuration, unchanged_files, environment_dependencies)
 
-    change_str = "(with changes)" if configuration.find_unchanged_files is not None else "(without changes)"
-
-    print("#" * 80)
-    print(
-            "After analysing {repo:s} {change:s}".format(
-            repo=repository_path, change=change_str,
-        )
+    environments_report(
+        configuration,
+        unchanged_files,
+        manage_builder,
+        environment_dependencies,
+        impacted_envs,
     )
-    print(
-        "   There were {total:d} total files".format(
-            total=len(all_files)
-        )
-    )
-    print(
-        "   There were {changed:d} changed files".format(
-            changed=len(all_files - unchanged_files)
-        )
-    )
-    print(
-        "   We calculated that the following {unchanged:d} files:".format(
-            unchanged=len(unchanged_files)
-        )
-    )
-    for preserved_file in list(unchanged_files):
-        print("      {:s}".format(preserved_file))
-    print("#" * 80)
-    print("#" * 80)
-    print(
-        "After building {vcm:s}, we found {envs:d} environments:".format(
-            vcm=manage_vcm_path, envs=len(manage_builder.all_environments)
-        )
-    )
-    for env in manage_builder.all_environments:
-        status = "BUILT" if env in manage_builder.built_environments else "NOT BUILT"
-        print("      {:s} (status: {:s})".format(env[0], status))
-    print("#" * 80)
-    print("#" * 80)
-    print(
-        "After processing {vcm:s}, we found the following routine counts:".format(
-            vcm=manage_vcm_path
-        )
-    )
-    for env_path, units in environment_dependencies.envs_to_units.items():
-        rout_count = 0
-        for _, functions in units.items():
-            rout_count += len(functions)
-        env = os.path.basename(env_path)
-        print("      {:s} had {:d} routines".format(env, rout_count))
-    print("#" * 80)
-    print("#" * 80)
-    print(
-        "After processing {vcm:s}, we found the following used {files:d} files:".format(
-            vcm=manage_vcm_path, files=len(environment_dependencies.fnames_to_envs)
-        )
-    )
-    for fname in environment_dependencies.fnames_to_envs:
-        suffix = "UNCHANGED" if fname in unchanged_files else "CHANGED"
-        env_counts = len(environment_dependencies.fnames_to_envs[fname])
-        print(
-            "      {fname:s} {suffix:s} (used in {count:d} envs)".format(
-                fname=fname, suffix=suffix, count=env_counts
-            )
-        )
-    print("#" * 80)
-    print("#" * 80)
-    print("After processing the changes, we will re-run these environments")
-    for env_path in impacted_envs:
-        env = os.path.basename(env_path)
-        used_files = environment_dependencies.envs_to_fnames[env_path]
-        impacted_deps = used_files - unchanged_files
-        units = environment_dependencies.envs_to_units[env_path]
-        rout_count = 0
-        for _, functions in units.items():
-            rout_count += len(functions)
-        print(
-            "    {env:s} ({rout_count:d} routines) due to {files:s}".format(
-                env=env, rout_count=rout_count, files=", ".join(impacted_deps)
-            )
-        )
-    print("#" * 80)
 
 
 # EOF
