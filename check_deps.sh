@@ -94,6 +94,7 @@ function check_manage
         echo -e "$M_OK"  
     else
         echo -e "$M_FAILED"
+        failed=1
     fi
 
     cd $comebackpath
