@@ -50,6 +50,16 @@ else
     echo -e "$M_OK, $PYTHON_VER"
 fi
 
+echo -n "Checking Python venv... "
+PYTHON_VENV=$(echo "import venv" | python3 >/dev/null 2>&1)
+venv_test=$?
+if [[ $venv_test -ne 0 ]];then
+    echo -e "$M_FAILED"
+    failed=1
+else
+    echo -e "$M_OK"
+fi
+
 echo -n "Checking git... "
 GIT_VER=$(git --version 2>&1)
 git_test=$?
