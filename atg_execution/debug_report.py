@@ -28,7 +28,7 @@ def join_wrap_list(alist, max_width=20):
     wrapped = "\n".join(wrap(", ".join(alist), max_width, fix_sentence_endings=True))
     wrapped = ",".join(alist)
     if len(wrapped) > max_width:
-        suffix = "..."
+        suffix = " ..."
         suffix_len = len(suffix)
         wrapped = wrapped[: max_width - suffix_len] + suffix
     return wrapped
@@ -38,17 +38,20 @@ def files_report(configuration, unchanged_files, environment_dependencies):
     print("*" * 10 + " Files report " + "*" * 10)
     repository_path = configuration.repository_path
     all_files = find_all_files_from_root(repository_path)
-    changed_files = all_files - unchanged_files
+    rel_all_files = set(
+        [os.path.relpath(fname, repository_path) for fname in all_files]
+    )
+    changed_files = rel_all_files - unchanged_files
 
     exts = [".c", ".h"]
     src_files = [
-        fname for fname in all_files if any([fname.endswith(ext) for ext in exts])
+        fname for fname in rel_all_files if any([fname.endswith(ext) for ext in exts])
     ]
 
     changed_src_files = changed_files.intersection(src_files)
     unchanged_src_files = unchanged_files.intersection(src_files)
 
-    count_all_files = len(all_files)
+    count_all_files = len(rel_all_files)
     count_src_files = len(src_files)
     count_changed_src_files = len(changed_src_files)
     count_unchanged_src_files = len(unchanged_src_files)
@@ -65,9 +68,8 @@ def files_report(configuration, unchanged_files, environment_dependencies):
     environment_details_data = [
         ["Filename", "Needs\nprocessing?", "Used by\n(count)", "Used by"],
     ]
-    for fname in all_files:
-        impacted = fname in changed_files
-        rel_fname = os.path.relpath(fname, repository_path)
+    for rel_fname in sorted(rel_all_files):
+        impacted = rel_fname in changed_files
         used_by = environment_dependencies.fnames_to_envs.get(rel_fname, [])
         if not used_by:
             continue
@@ -97,7 +99,7 @@ def environments_report(
     file_stat_data = [
         ["Category", "Count"],
         ["All environments", count_all_envs],
-        ["Environments succesfully built", count_built_envs],
+        ["Environments successfully built", count_built_envs],
         ["Environments not built", count_failed_envs],
         ["Environments needing processing", count_impacted_envs],
     ]
@@ -111,11 +113,12 @@ def environments_report(
             "Needs\nprocessing?",
             "Units",
             "Routines",
-            "Dependencies\n(count)",
-            "Dependencies",
+            "All dependencies\n(count)",
+            "All dependencies",
+            "Impacted\ndependencies",
         ],
     ]
-    for env, path in manage_builder.all_environments:
+    for env, path in sorted(manage_builder.all_environments):
         env_path = os.path.join(path, env)
         needs_processing = env_path in impacted_envs
         used_files = environment_dependencies.envs_to_fnames[env_path]
@@ -126,6 +129,9 @@ def environments_report(
 
         path = join_wrap_list([path])
         deps = join_wrap_list(used_files)
+
+        used_changed = used_files.difference(unchanged_files)
+        used_changed_str = join_wrap_list(used_changed)
 
         rout_count = 0
         for _, functions in units.items():
@@ -141,6 +147,7 @@ def environments_report(
                 rout_count,
                 used_files_count,
                 deps,
+                used_changed_str,
             ]
         )
 

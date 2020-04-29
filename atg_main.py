@@ -48,6 +48,10 @@ def atg_execution(options):
         configuration = atg_config.parse_configuration(configuration, options)
 
     if configuration.find_unchanged_files is not None:
+        if options.verbose:
+            atg_misc.print_msg(
+                "'unchanged_files' was configured; finding unchanged files"
+            )
         unchanged_files = configuration.find_unchanged_files()
     else:
         if options.verbose:
