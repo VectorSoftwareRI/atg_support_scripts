@@ -24,16 +24,47 @@
 
 C_RED="\e[1;31m"
 C_GREEN="\e[1;32m"
+C_YELLOW="\e[1;33m"
 C_ZERO="\e[0m"
 
 M_OK="${C_GREEN}ok${C_ZERO}"
 M_FAILED="${C_RED}failed${C_ZERO}"
+M_WARNING="${C_YELLOW}warning${C_ZERO}"
 
 VC_VER=20
+GCC_EXPECTED_VERSION="8.3.1"
 
 failed=0
 
+function usage
+{
+        echo
+        echo "Usage: $0 [options] [vcm file]"
+        echo
+		echo "Provide path to vcm file to run checks on Manage project"
+        echo
+}
+
+while getopts "h" opt; do
+        case "$opt" in
+                "h")
+                        usage
+						exit
+                        ;;
+                *)
+                        usage
+						exit 1
+                        ;;
+        esac
+done
+
+shift $((OPTIND-1))
+
 MANAGE_PROJ_PATH="$1"
+
+##
+## VectorCAST checks
+##
 
 echo -n "Checking VECTORCAST_DIR env variable... "
 if [[ -z "$VECTORCAST_DIR" ]];then
@@ -62,6 +93,10 @@ else
     failed=1
 fi
 
+##
+## Python 3
+##
+
 echo -n "Checking Python3... "
 PYTHON_VER=$(python3 --version 2>&1)
 python3_test=$?
@@ -71,6 +106,10 @@ if [[ $python3_test -ne 0 ]];then
 else
     echo -e "$M_OK, $PYTHON_VER"
 fi
+
+##
+## Python venv
+##
 
 echo -n "Checking Python venv... "
 PYTHON_VENV=$(echo "import venv" | python3 >/dev/null 2>&1)
@@ -82,6 +121,10 @@ else
     echo -e "$M_OK"
 fi
 
+##
+## Git checks
+##
+
 echo -n "Checking git... "
 GIT_VER=$(git --version 2>&1)
 git_test=$?
@@ -92,6 +135,52 @@ else
     echo -e "$M_OK, $GIT_VER"
 fi
 
+##
+## Linux distribution checks
+##
+
+lsb_release=0
+echo -n "Checking for lsb_release... "
+if [[ -x /usr/bin/lsb_release ]];then
+    echo -e "$M_OK" 
+    lsb_release=1
+else
+    echo -e "$M_WARNING, failed to check lsb_release"
+fi
+
+if [[ $lsb_release -eq 1 ]];then
+    DISTRIB=$(/usr/bin/lsb_release -i | cut -f2)
+    RELEASE_VER=$(/usr/bin/lsb_release -sr | cut -f1 -d.)
+
+    echo -n "Checking Linux distribution... "
+    if [[ "$DISTRIB" = "CentOS" ]];then
+        echo -e "$M_OK"
+    else
+        echo -e "$M_WARNING, expected CentOS (got $DISTRIB)"
+    fi
+
+    echo -n "Checking CentOS version..."
+    if [[ "$RELEASE_VER" = "8" ]];then
+        echo -e "$M_OK"
+    else
+        echo -e "$M_WARNING, expected 8 (got $RELEASE_VER)"
+    fi
+fi
+
+##
+## Compiler checks
+##
+echo -n "Checking gcc version... "
+GCC_VERSION=$(gcc --version | head -1 |& cut -f 3 -d " ")
+if [[ "$GCC_VERSION" = "$GCC_EXPECTED_VERSION" ]];then
+    echo -e "$M_OK"
+else
+    echo -e "$M_WARNING, expected $GCC_EXPECTED_VERSION (got $GCC_VERSION)"
+fi
+
+##
+## Manage project checks
+##
 
 function check_manage
 {
@@ -136,6 +225,10 @@ function check_manage
 if [[ ! -z "$MANAGE_PROJ_PATH" ]];then
     check_manage $MANAGE_PROJ_PATH
 fi
+
+##
+## Final result
+##
 
 if [[ $failed -eq 1 ]];then
     RES="$M_FAILED"
