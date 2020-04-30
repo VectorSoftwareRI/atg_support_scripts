@@ -39,6 +39,7 @@ TRUNC_DOTS = "..."
 DO_NOT_DECORATE_METHODS = ["__repr__", "__str__", "__init__"]
 
 be_verbose = False
+be_quiet = False
 
 
 class bcolours:
@@ -67,7 +68,7 @@ def print_msg(msg):
 
 
 def print_warn(msg):
-    if not be_verbose:
+    if be_quiet:
         return
     print(
         "{:s} {:s}{:s}{:s}".format(WARN_INFO_MARKER, bcolours.BOLD, msg, bcolours.ENDC)

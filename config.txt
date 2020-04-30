@@ -7,3 +7,4 @@ skip_build = True
 limit_unchanged = 100
 allow_moves = True
 allow_broken_environments = True
+quiet = False

@@ -53,6 +53,9 @@ def process_options(options):
     # verbosity
     atg_misc.be_verbose = options.verbose
 
+    # verbosity
+    atg_misc.be_quiet = options.quiet
+
 
 def load_configuration(options):
     configuration_module = run_path(options.config_py)
@@ -73,16 +76,14 @@ def atg_execution(options):
     configuration = load_configuration(options)
 
     if configuration.find_unchanged_files is not None:
-        if options.verbose:
-            atg_misc.print_warn(
-                "Finding unchanged files was configured, discovering changed files"
-            )
+        atg_misc.print_warn(
+            "Finding unchanged files was configured, discovering changed files"
+        )
         unchanged_files = configuration.find_unchanged_files()
     else:
-        if options.verbose:
-            atg_misc.print_warn(
-                "Finding unchanged files was not configured, all files will be processed"
-            )
+        atg_misc.print_warn(
+            "Finding unchanged files was not configured, all files will be processed"
+        )
         unchanged_files = set()
 
     # Create our Manage project
@@ -109,8 +110,14 @@ def atg_execution(options):
             # ... flag it as impacted!
             impacted_envs.add(environment)
 
+    atg_misc.print_warn(
+        "{impacted:d} environments need processing (total: {total:d} environments)".format(
+            impacted=len(impacted_envs), total=len(manage_builder.all_environments)
+        )
+    )
+
     # Dry run or reporting
-    if options.dry_run or options.report:
+    if options.report:
 
         # Generate the report
         atg_debug_report.debug_report(
@@ -122,6 +129,11 @@ def atg_execution(options):
         )
 
     if options.dry_run:
+
+        # Let the user know something has happened
+        if not options.report:
+            atg_misc.print_warn("Dry run with no report")
+
         # If we're dry run, finish here
         return 0
 

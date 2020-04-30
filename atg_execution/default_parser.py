@@ -66,6 +66,7 @@ def get_default_parser():
     parser.add("-l", "--logging", required=False, help="log calls", type=boolean_string)
     parser.add("-lf", "--log_file", required=False, help="log file", type=str)
     parser.add("-v", "--verbose", required=False, help="verbose", type=boolean_string)
+    parser.add("-q", "--quiet", required=False, help="quiet", type=boolean_string)
 
     return parser
 
@@ -81,7 +82,7 @@ def validate_options(options):
     Checks if option combinations are valid
     """
 
-    options_are_value = True
+    options_are_valid = True
     msg = None
 
     if options.skip_build == options.clean_up:
@@ -91,17 +92,29 @@ def validate_options(options):
         else:
             # skip_build = True, clean_up = True
             msg = "you cannot skip the build if you've cleaned-up"
-        options_are_value = False
+        options_are_valid = False
 
     if not isinstance(options.verbose, bool):
         msg = "Verbose must be a bool"
-        options_are_value = False
+        options_are_valid = False
 
-    if not options_are_value:
+    if not isinstance(options.quiet, bool):
+        msg = "Quiet must be a bool"
+        options_are_valid = False
+
+    if options.verbose and options.quiet:
+        msg = "You cannot both be quiet and verbose"
+        options_are_valid = False
+
+    if options.report and options.quiet:
+        msg = "Generating report and being quiet are not compatible"
+        options_are_valid = False
+
+    if not options_are_valid:
         assert msg is not None
         print("INVALID CONFIGURATION -- {:s}".format(msg))
 
-    return options_are_value
+    return options_are_valid
 
 
 # EOF
