@@ -33,6 +33,7 @@ M_WARNING="${C_YELLOW}warning${C_ZERO}"
 
 VC_VER=20
 GCC_EXPECTED_VERSION="8.3.1"
+OPENSSL_HEADER="/usr/include/openssl/opensslconf-i386.h"
 
 failed=0
 
@@ -176,6 +177,16 @@ if [[ "$GCC_VERSION" = "$GCC_EXPECTED_VERSION" ]];then
     echo -e "$M_OK"
 else
     echo -e "$M_WARNING, expected $GCC_EXPECTED_VERSION (got $GCC_VERSION)"
+fi
+
+##
+## OpenSSL checks
+##
+echo -n "Checking OpenSSL... "
+if [[ -f "$OPENSSL_HEADER" ]];then
+    echo -e "$M_OK"
+else
+    echo -e "$M_WARNING, missing $OPENSSL_HEADER"
 fi
 
 ##
