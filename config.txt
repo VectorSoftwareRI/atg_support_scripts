@@ -1,10 +1,11 @@
-timeout = 2
+timeout = 10
 report = True
-dry_run = True
-baseline_iterations = 1
-clean_up = False
-skip_build = True
+dry_run = False
+baseline_iterations = 3
+clean_up = True
+skip_build = False
 limit_unchanged = 100
 allow_moves = True
-allow_broken_environments = True
+allow_broken_environments = False
 quiet = False
+verbose = True

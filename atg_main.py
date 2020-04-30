@@ -131,8 +131,7 @@ def atg_execution(options):
     if options.dry_run:
 
         # Let the user know something has happened
-        if not options.report:
-            atg_misc.print_warn("Dry run with no report")
+        atg_misc.print_warn("Dry-run mode: analysis only, no tests generated")
 
         # If we're dry run, finish here
         return 0
