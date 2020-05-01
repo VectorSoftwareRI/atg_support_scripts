@@ -57,7 +57,7 @@ fi
 
 # Tell the user what to do
 echo -e "\nPlease run: "
-echo "    source $SERVER_WORKSPACE/venv/bin/active"
+echo "    source $SERVER_WORKSPACE/venv/bin/activate"
 
 # Exit with our status
 exit ${status}
