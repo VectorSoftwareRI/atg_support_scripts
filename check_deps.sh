@@ -100,8 +100,8 @@ else
 fi
 
 echo -n "Checking VectorCAST version >= $VC_VER... "
-CLICAST_VER="$(echo $CLICAST_RES | cut -f2 -d' ')"
-if [[ $CLICAST_VER -ge $VC_VER ]];then
+CLICAST_VER="$(echo $CLICAST_RES | cut -f2 -d' ' | cut -f1 -d"." | tr -cd '[:digit:]')"
+if [[ "$CLICAST_VER" -ge $VC_VER ]];then
   echo -e "$M_OK"
 else
   echo -e "$M_FAILED"
@@ -121,11 +121,21 @@ else
   license=1
 fi
 
+lm_use_file=0
+if [[ -f "$LM_LICENSE_FILE" ]];then
+  lm_use_file=1
+  LM_FILE_PATH="$LM_LICENSE_FILE"
+fi
+
 echo -n "Checking license... "
 if [[ $license -eq 1 ]];then
-  LIC_LMSTAT_RES="$($VECTORCAST_DIR/flexlm/lmutil lmstat -a 2>&1)"
-  LIC_MANAGE_RES="$(echo $LIC_LMSTAT_RES | grep VCAST_MANAGE)"
-  LIC_ATG_RES="$(echo $LIC_LMSTAT_RES | grep VCAST_ATG)"
+  if [[ $lm_use_file -eq 1 ]];then
+    LIC_OUT="$(cat $LM_LICENSE_FILE)"
+  else
+    LIC_OUT="$($VECTORCAST_DIR/flexlm/lmutil lmstat -a 2>&1)"
+  fi
+  LIC_MANAGE_RES="$(echo $LIC_OUT | grep VCAST_MANAGE)"
+  LIC_ATG_RES="$(echo $LIC_OUT | grep VCAST_ATG)"
   lic_failed=0
   if [[ "$LIC_MANAGE_RES" != "" ]];then
     echo -n "Manage "
@@ -138,6 +148,11 @@ if [[ $license -eq 1 ]];then
   else
     echo -n "(missing ATG) "
     lic_failed=1
+  fi
+  if [[ $lm_use_file -eq 1 ]];then
+    echo -n "(using license file) "
+  else
+    echo -n "(using LM server) "
   fi
   if [[ $lic_failed -eq 1 ]];then
     echo -e "$M_FAILED"
@@ -250,7 +265,7 @@ function check_manage
   comebackpath="$(pwd)"
   
   cd "$(dirname $MANAGE_PROJ_PATH)"
-
+  
   vcmfile="$(basename $MANAGE_PROJ_PATH)"
   
   echo -n "Checking if Manage project is under git control... "
