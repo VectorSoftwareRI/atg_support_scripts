@@ -35,22 +35,30 @@ VC_VER=20
 GCC_EXPECTED_VERSION="8.3.1"
 OPENSSL_HEADER="/usr/include/openssl/opensslconf-i386.h"
 
-failed=0
+bypass_vcm=0
+final_result=0
 
 function usage
 {
         echo
-        echo "Usage: $0 [options] [vcm file]"
+        echo "Usage: $0 [options] <vcm file>"
         echo
 		echo "Provide path to vcm file to run checks on Manage project"
         echo
+        echo "Options:"
+        echo
+        echo " -b bypass the VCM file check"
+        echo
 }
 
-while getopts "h" opt; do
+while getopts "bh" opt; do
         case "$opt" in
                 "h")
                         usage
 						exit
+                        ;;
+                "b")
+                        bypass_vcm=1
                         ;;
                 *)
                         usage
@@ -62,15 +70,22 @@ done
 shift $((OPTIND-1))
 
 MANAGE_PROJ_PATH="$1"
+if [[ $bypass_vcm -eq 0 ]];then
+    if [[ -z "$MANAGE_PROJ_PATH" ]];then
+        usage
+        exit 1
+    fi    
+else
+    MANAGE_PROJ_PATH=""
+fi
 
 ##
 ## VectorCAST checks
 ##
-
 echo -n "Checking VECTORCAST_DIR env variable... "
 if [[ -z "$VECTORCAST_DIR" ]];then
     echo -e "$M_FAILED"
-    failed=1
+    final_result=1
 else
     echo -e "$M_OK"
 fi
@@ -80,7 +95,7 @@ CLICAST_RES=$($VECTORCAST_DIR/clicast --version 2>&1)
 clicast_test=$?
 if [[ $clicast_test -ne 0 ]];then
     echo -e "$M_FAILED"
-    failed=1
+    final_result=1
 else
     echo -e "$M_OK"
 fi
@@ -91,19 +106,76 @@ if [[ $CLICAST_VER -ge $VC_VER ]];then
     echo -e "$M_OK"
 else
     echo -e "$M_FAILED"
-    failed=1
+    final_result=1
+fi
+
+##
+## License checks
+##
+license=0
+echo -n "Checking license env variables... "
+if [[ -z "$LM_LICENSE_FILE$VECTOR_LICENSE_FILE" ]];then
+    echo -e "$M_FAILED"
+    final_result=1
+else
+    echo -e "$M_OK"
+    license=1
+fi
+
+echo -n "Checking license... "
+if [[ $license -eq 1 ]];then
+    LIC_LMSTAT_RES=$($VECTORCAST_DIR/flexlm/lmutil lmstat -a 2>&1)
+    LIC_MANAGE_RES=$(echo $LIC_LMSTAT_RES | grep VCAST_MANAGE) 
+    LIC_ATG_RES=$(echo $LIC_LMSTAT_RES | grep VCAST_ATG)
+    lic_failed=0
+    if [[ "$LIC_MANAGE_RES" != "" ]];then
+        echo -n "Manage "
+    else
+        echo -n "(missing Manage) "
+        lic_failed=1 
+    fi
+    if [[ "$LIC_ATG_RES" != "" ]];then
+        echo -n "ATG "
+    else
+        echo -n "(missing ATG) "
+        lic_failed=1
+    fi
+    if [[ $lic_failed -eq 1 ]];then
+        echo -e "$M_FAILED"
+        final_result=1
+    else
+        echo -e "$M_OK"
+    fi
+fi
+
+##
+## FS checks
+##
+echo -n "Checking filesystem... "
+FINDMNT_CHECK=$(findmnt -n -T . -o FSTYPE 2>&1)
+findmnt_test=$?
+if [[ $findmnt_test -eq 0 ]];then
+    BADFS_CHECK=$(echo $FINDMNT_CHECK | egrep '(vmhgfs-fuse|cifs)')
+    if [[ "$BADFS_CHECK" = "" ]];then
+        echo -e "$M_OK, $FINDMNT_CHECK"
+    else
+        echo -e "$M_FAILED, unsupported: $FINDMNT_CHECK"
+        final_result=1
+    fi
+else
+    echo -e "$M_WARNING, findmnt not available"
+    final_result=2
 fi
 
 ##
 ## Python 3
 ##
-
 echo -n "Checking Python3... "
 PYTHON_VER=$(python3 --version 2>&1)
 python3_test=$?
 if [[ $python3_test -ne 0 ]];then
     echo -e "$M_FAILED"
-    failed=1
+    final_result=1
 else
     echo -e "$M_OK, $PYTHON_VER"
 fi
@@ -111,13 +183,12 @@ fi
 ##
 ## Python venv
 ##
-
 echo -n "Checking Python venv... "
 PYTHON_VENV=$(echo "import venv" | python3 >/dev/null 2>&1)
 venv_test=$?
 if [[ $venv_test -ne 0 ]];then
     echo -e "$M_FAILED"
-    failed=1
+    final_result=1
 else
     echo -e "$M_OK"
 fi
@@ -125,47 +196,14 @@ fi
 ##
 ## Git checks
 ##
-
 echo -n "Checking git... "
 GIT_VER=$(git --version 2>&1)
 git_test=$?
 if [[ $git_test -ne 0 ]];then
     echo -e "$M_FAILED"
-    failed=1
+    final_result=1
 else
     echo -e "$M_OK, $GIT_VER"
-fi
-
-##
-## Linux distribution checks
-##
-
-lsb_release=0
-echo -n "Checking for lsb_release... "
-if [[ -x /usr/bin/lsb_release ]];then
-    echo -e "$M_OK" 
-    lsb_release=1
-else
-    echo -e "$M_WARNING, failed to check lsb_release"
-fi
-
-if [[ $lsb_release -eq 1 ]];then
-    DISTRIB=$(/usr/bin/lsb_release -i | cut -f2)
-    RELEASE_VER=$(/usr/bin/lsb_release -sr | cut -f1 -d.)
-
-    echo -n "Checking Linux distribution... "
-    if [[ "$DISTRIB" = "CentOS" ]];then
-        echo -e "$M_OK"
-    else
-        echo -e "$M_WARNING, expected CentOS (got $DISTRIB)"
-    fi
-
-    echo -n "Checking CentOS version..."
-    if [[ "$RELEASE_VER" = "8" ]];then
-        echo -e "$M_OK"
-    else
-        echo -e "$M_WARNING, expected 8 (got $RELEASE_VER)"
-    fi
 fi
 
 ##
@@ -174,25 +212,15 @@ fi
 echo -n "Checking gcc version... "
 GCC_VERSION=$(gcc --version | head -1 |& cut -f 3 -d " ")
 if [[ "$GCC_VERSION" = "$GCC_EXPECTED_VERSION" ]];then
-    echo -e "$M_OK"
+    echo -e "$M_OK, gcc version $GCC_VERSION"
 else
     echo -e "$M_WARNING, expected $GCC_EXPECTED_VERSION (got $GCC_VERSION)"
-fi
-
-##
-## OpenSSL checks
-##
-echo -n "Checking OpenSSL... "
-if [[ -f "$OPENSSL_HEADER" ]];then
-    echo -e "$M_OK"
-else
-    echo -e "$M_WARNING, missing $OPENSSL_HEADER"
+    final_result=2
 fi
 
 ##
 ## Manage project checks
 ##
-
 function check_manage
 {
     MANAGE_PROJ_PATH="$1"
@@ -203,7 +231,7 @@ function check_manage
 
     if [[ "$ext" != "vcm" ]];then
         echo -e "$M_FAILED, Invalid Manage project path"
-        failed=1
+        final_result=1
         return
     fi
 
@@ -211,7 +239,7 @@ function check_manage
         echo -e "$M_OK"
     else
         echo -e "$M_FAILED, $MANAGE_PROJ_PATH is not a valid (existing) path"
-        failed=1
+        final_result=1
         return
     fi
 
@@ -226,11 +254,18 @@ function check_manage
         echo -e "$M_OK"  
     else
         echo -e "$M_FAILED"
-        failed=1
+        final_result=1
     fi
 
     cd $comebackpath
 
+    echo -n "Checking Manage project file... "
+    if [[ "$(grep "project version" $MANAGE_PROJ_PATH)" != "" ]];then
+        echo -e "$M_OK"
+    else
+        echo -e "$M_FAILED"
+        final_result=1
+    fi
 }
 
 if [[ ! -z "$MANAGE_PROJ_PATH" ]];then
@@ -241,10 +276,12 @@ fi
 ## Final result
 ##
 
-if [[ $failed -eq 1 ]];then
+if [[ $final_result -eq 0 ]];then
+    RES="$M_OK"
+elif [[ $final_result -eq 1 ]];then
     RES="$M_FAILED"
 else
-    RES="$M_OK"
+    RES="$M_OK with $M_WARNING"
 fi
 echo 
 echo -e "RESULT: $RES"
