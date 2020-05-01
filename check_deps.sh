@@ -143,10 +143,8 @@ else
   echo -e "$M_OK"
 fi
 
-echo -n "Checking that clicast exists... "
-CLICAST_RES="$($VECTORCAST_DIR/clicast --version 2>&1)"
-clicast_test=$?
-if [[ $clicast_test -ne 0 ]];then
+echo -n "Checking that clicast is executable... "
+if [[ -x "$VECTORCAST_DIR/clicast" ]];then
   echo -e "$M_FAILED"
   final_result=1
 else
@@ -154,6 +152,7 @@ else
 fi
 
 echo -n "Checking VectorCAST version >= $VC_VER... "
+CLICAST_RES="$($VECTORCAST_DIR/clicast --version 2>&1)"
 CLICAST_VER="$(echo $CLICAST_RES | cut -f2 -d' ' | cut -f1 -d"." | tr -cd '[:digit:]')"
 if [[ "$CLICAST_VER" -ge $VC_VER ]];then
   echo -e "$M_OK"
