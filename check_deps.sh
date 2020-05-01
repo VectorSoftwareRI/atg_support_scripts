@@ -40,31 +40,31 @@ final_result=0
 
 function usage
 {
-        echo
-        echo "Usage: $0 [options] <vcm file>"
-        echo
-		echo "Provide path to vcm file to run checks on Manage project"
-        echo
-        echo "Options:"
-        echo
-        echo " -b bypass the VCM file check"
-        echo
+    echo
+    echo "Usage: $0 [options] <vcm file>"
+    echo
+    echo "Provide path to vcm file to run checks on Manage project"
+    echo
+    echo "Options:"
+    echo
+    echo " -b bypass the VCM file check"
+    echo
 }
 
 while getopts "bh" opt; do
-        case "$opt" in
-                "h")
-                        usage
-						exit
-                        ;;
-                "b")
-                        bypass_vcm=1
-                        ;;
-                *)
-                        usage
-						exit 1
-                        ;;
-        esac
+    case "$opt" in
+        "h")
+            usage
+            exit
+            ;;
+        "b")
+            bypass_vcm=1
+            ;;
+        *)
+            usage
+            exit 1
+            ;;
+    esac
 done
 
 shift $((OPTIND-1))
@@ -235,12 +235,17 @@ function check_manage
         return
     fi
 
-    if [[ -e "$MANAGE_PROJ_PATH" ]];then
-        echo -e "$M_OK"
-    else
+    if [[ ! -e "$MANAGE_PROJ_PATH" ]];then
         echo -e "$M_FAILED, $MANAGE_PROJ_PATH is not a valid (existing) path"
         final_result=1
         return
+    fi
+
+    if [[ "$(grep "project version" $MANAGE_PROJ_PATH)" != "" ]];then
+        echo -e "$M_OK"
+    else
+        echo -e "$M_FAILED"
+        final_result=1
     fi
 
     comebackpath="$(pwd)"
@@ -258,14 +263,6 @@ function check_manage
     fi
 
     cd $comebackpath
-
-    echo -n "Checking Manage project file... "
-    if [[ "$(grep "project version" $MANAGE_PROJ_PATH)" != "" ]];then
-        echo -e "$M_OK"
-    else
-        echo -e "$M_FAILED"
-        final_result=1
-    fi
 }
 
 if [[ ! -z "$MANAGE_PROJ_PATH" ]];then
