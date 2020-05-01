@@ -29,6 +29,15 @@ To allow a user to utilise these scripts without requiring direct installation, 
 
 Installing the required packages can be achieved as follows:
 
+#### Automatic
+
+```bash
+# Setup the venv
+./setup_venv.sh
+```
+
+#### Manual
+
 ```bash
 # create a new virtual environment
 python3 -m venv venv
@@ -41,6 +50,14 @@ pip3 install -U pip
 
 # Install from our requirements file
 pip3 install -r requirements.txt
+```
+
+#### Starting 'venv'
+
+Once you have setup your `venv`, it is important that it is 'activated':
+
+```bash
+source venv/bin/activate
 ```
 
 ## Creating your own analysis
