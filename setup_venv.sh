@@ -12,6 +12,7 @@ fi
 
 ${PYTHON_INTERPRETER} -m venv $VENV_DIR
 source $VENV_DIR/bin/activate
-pip install -r $SERVER_WORKSPACE/requirements.txt
+pip3 install -U pip
+pip3 install -r $SERVER_WORKSPACE/requirements.txt
 
 #EOF
