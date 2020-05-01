@@ -143,9 +143,9 @@ def environments_report(
     for env, path in sorted(manage_builder.all_environments):
         env_path = os.path.join(path, env)
         needs_processing = env_path in impacted_envs
-        used_files = environment_dependencies.envs_to_fnames[env_path]
+        used_files = environment_dependencies.envs_to_fnames.get(env_path, set())
         used_files_count = len(used_files)
-        units = environment_dependencies.envs_to_units[env_path]
+        units = environment_dependencies.envs_to_units.get(env_path, {})
 
         built = (env, path) in manage_builder.built_environments
 
