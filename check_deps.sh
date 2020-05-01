@@ -90,7 +90,7 @@ else
 fi
 
 echo -n "Checking clicast... "
-CLICAST_RES=$($VECTORCAST_DIR/clicast --version 2>&1)
+CLICAST_RES="$($VECTORCAST_DIR/clicast --version 2>&1)"
 clicast_test=$?
 if [[ $clicast_test -ne 0 ]];then
   echo -e "$M_FAILED"
@@ -100,7 +100,7 @@ else
 fi
 
 echo -n "Checking VectorCAST version >= $VC_VER... "
-CLICAST_VER=$(echo $CLICAST_RES | cut -f2 -d' ')
+CLICAST_VER="$(echo $CLICAST_RES | cut -f2 -d' ')"
 if [[ $CLICAST_VER -ge $VC_VER ]];then
   echo -e "$M_OK"
 else
@@ -123,9 +123,9 @@ fi
 
 echo -n "Checking license... "
 if [[ $license -eq 1 ]];then
-  LIC_LMSTAT_RES=$($VECTORCAST_DIR/flexlm/lmutil lmstat -a 2>&1)
-  LIC_MANAGE_RES=$(echo $LIC_LMSTAT_RES | grep VCAST_MANAGE)
-  LIC_ATG_RES=$(echo $LIC_LMSTAT_RES | grep VCAST_ATG)
+  LIC_LMSTAT_RES="$($VECTORCAST_DIR/flexlm/lmutil lmstat -a 2>&1)"
+  LIC_MANAGE_RES="$(echo $LIC_LMSTAT_RES | grep VCAST_MANAGE)"
+  LIC_ATG_RES="$(echo $LIC_LMSTAT_RES | grep VCAST_ATG)"
   lic_failed=0
   if [[ "$LIC_MANAGE_RES" != "" ]];then
     echo -n "Manage "
@@ -151,7 +151,7 @@ fi
 ## FS checks
 ##
 echo -n "Checking filesystem... "
-FINDMNT_CHECK=$(findmnt -n -T . -o FSTYPE 2>&1)
+FINDMNT_CHECK="$(findmnt -n -T . -o FSTYPE 2>&1)"
 findmnt_test=$?
 if [[ $findmnt_test -eq 0 ]];then
   BADFS_CHECK=$(echo $FINDMNT_CHECK | egrep '(vmhgfs-fuse|cifs)')
@@ -170,7 +170,7 @@ fi
 ## Python 3
 ##
 echo -n "Checking Python3... "
-PYTHON_VER=$(python3 --version 2>&1)
+PYTHON_VER="$(python3 --version 2>&1)"
 python3_test=$?
 if [[ $python3_test -ne 0 ]];then
   echo -e "$M_FAILED"
@@ -183,7 +183,7 @@ fi
 ## Python venv
 ##
 echo -n "Checking Python venv... "
-PYTHON_VENV=$(echo "import venv" | python3 >/dev/null 2>&1)
+echo "import venv" | python3 >/dev/null 2>&1
 venv_test=$?
 if [[ $venv_test -ne 0 ]];then
   echo -e "$M_FAILED"
@@ -196,7 +196,7 @@ fi
 ## Git checks
 ##
 echo -n "Checking git... "
-GIT_VER=$(git --version 2>&1)
+GIT_VER="$(git --version 2>&1)"
 git_test=$?
 if [[ $git_test -ne 0 ]];then
   echo -e "$M_FAILED"
@@ -209,7 +209,7 @@ fi
 ## Compiler checks
 ##
 echo -n "Checking gcc version... "
-GCC_VERSION=$(gcc --version | head -1 |& cut -f 3 -d " ")
+GCC_VERSION="$(gcc --version | head -1 |& cut -f 3 -d " ")"
 if [[ "$GCC_VERSION" = "$GCC_EXPECTED_VERSION" ]];then
   echo -e "$M_OK, gcc version $GCC_VERSION"
 else
@@ -249,10 +249,12 @@ function check_manage
   
   comebackpath="$(pwd)"
   
-  cd $(dirname $MANAGE_PROJ_PATH)
+  cd "$(dirname $MANAGE_PROJ_PATH)"
+
+  vcmfile="$(basename $MANAGE_PROJ_PATH)"
   
   echo -n "Checking if Manage project is under git control... "
-  git status >/dev/null 2>&1
+  git ls-files --error-unmatch $vcmfile >/dev/null 2>&1
   git_status=$?
   if [[ $git_status -eq 0 ]];then
     echo -e "$M_OK"
@@ -264,7 +266,7 @@ function check_manage
   cd $comebackpath
 }
 
-if [[ ! -z "$MANAGE_PROJ_PATH" ]];then
+if [[ -n "$MANAGE_PROJ_PATH" ]];then
   check_manage $MANAGE_PROJ_PATH
 fi
 
