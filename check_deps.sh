@@ -33,7 +33,6 @@ M_WARNING="${C_YELLOW}warning${C_ZERO}"
 
 VC_VER=20
 GCC_EXPECTED_VERSION="8.3.1"
-OPENSSL_HEADER="/usr/include/openssl/opensslconf-i386.h"
 
 bypass_vcm=0
 final_result=0
