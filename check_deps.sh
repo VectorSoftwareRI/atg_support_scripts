@@ -145,10 +145,10 @@ fi
 
 echo -n "Checking that clicast is executable... "
 if [[ -x "$VECTORCAST_DIR/clicast" ]];then
+  echo -e "$M_OK"
+else
   echo -e "$M_FAILED"
   final_result=1
-else
-  echo -e "$M_OK"
 fi
 
 echo -n "Checking VectorCAST version >= $VC_VER... "
