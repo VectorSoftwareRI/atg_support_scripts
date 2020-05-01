@@ -30,29 +30,29 @@ SERVER_WORKSPACE=$(dirname $SCRIPT_PATH)
 VENV_DIR="$SERVER_WORKSPACE/venv"
 
 if [[ -e "$VENV_DIR" ]];then
-    echo "venv already exists!"
-
-    # Unhappy path
-    status=1
+  echo "venv already exists!"
+  
+  # Unhappy path
+  status=1
 else
-    echo "Setting up new venv ..."
-
-    # Create new venv
-    ${PYTHON_INTERPRETER} -m venv $VENV_DIR
-
-    # Activate it
-    source $VENV_DIR/bin/activate
-
-    # Update pip
-    pip3 install -U pip
-
-    # Install the required packages
-    pip3 install -r $SERVER_WORKSPACE/requirements.txt
-
-    echo "venv successfully created!"
-
-    # Happy path
-    status=0
+  echo "Setting up new venv ..."
+  
+  # Create new venv
+  ${PYTHON_INTERPRETER} -m venv $VENV_DIR
+  
+  # Activate it
+  source $VENV_DIR/bin/activate
+  
+  # Update pip
+  pip3 install -U pip
+  
+  # Install the required packages
+  pip3 install -r $SERVER_WORKSPACE/requirements.txt
+  
+  echo "venv successfully created!"
+  
+  # Happy path
+  status=0
 fi
 
 # Tell the user what to do
