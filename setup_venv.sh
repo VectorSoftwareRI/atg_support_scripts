@@ -38,10 +38,13 @@ else
   echo "Setting up new venv ..."
   
   # Create new venv
-  ${PYTHON_INTERPRETER} -m venv $VENV_DIR
+  ${PYTHON_INTERPRETER} -m venv $VENV_DIR --without-pip
   
   # Activate it
   source $VENV_DIR/bin/activate
+  
+  # Install pip
+  curl https://bootstrap.pypa.io/get-pip.py 2>/dev/null | $PYTHON_INTERPRETER
   
   # Update pip
   pip3 install -U pip

@@ -97,8 +97,8 @@ if [[ -f "$LM_LICENSE_FILE" ]];then
   LM_FILE_PATH="$LM_LICENSE_FILE"
 fi
 
-echo -n "Checking license... "
 if [[ $license -eq 1 ]];then
+  echo -n "Checking license... "
   if [[ $lm_use_file -eq 1 ]];then
     LIC_OUT="$(cat $LM_LICENSE_FILE)"
   else
@@ -220,16 +220,53 @@ else
 fi
 
 ##
+## Curl checks
+##
+echo -n "Checking curl... "
+curl --version 1>/dev/null 2>&1
+curl_test=$?
+if [[ $curl_test -ne 0 ]]; then
+  echo -e "$M_FAILED"
+  final_result=1
+else
+  echo -e "$M_OK"
+fi
+
+##
 ## Compiler checks
 ##
 echo -n "Checking gcc version... "
-GCC_VERSION="$(gcc --version | head -1 |& cut -f 3 -d " ")"
-if [[ "$GCC_VERSION" = "$GCC_EXPECTED_VERSION" ]];then
-  echo -e "$M_OK, gcc version $GCC_VERSION"
+GCC_VERSION="$(gcc --version 2>&1)"
+gcc_test=$?
+GCC_VERSION="$(echo $GCC_VERSION | head -1 | cut -f 3 -d " ")"
+if [[ $gcc_test -ne 0 ]];then
+  echo -e "$M_FAILED"
+  final_result=1
 else
-  echo -e "$M_WARNING, expected $GCC_EXPECTED_VERSION (got $GCC_VERSION)"
-  final_result=2
+  if [[ "$GCC_VERSION" = "$GCC_EXPECTED_VERSION" ]];then
+    echo -e "$M_OK, gcc version $GCC_VERSION"
+  else
+    echo -e "$M_WARNING, expected $GCC_EXPECTED_VERSION (got $GCC_VERSION)"
+    final_result=2
+  fi
 fi
+
+echo -n "Checking gcc for -m32... "
+temp=$(mktemp)
+temp_c=${temp}.c
+temp_o=${temp}.o
+echo "#include <stdint.h>" >> ${temp_c}
+gcc -c -m32 ${temp_c} -o ${temp_o} 1>/dev/null 2>&1
+m32_test=$?
+rm -f ${temp} ${temp_c} ${temp_o}
+if [[ $m32_test -ne 0 ]]; then
+  echo -e "$M_FAILED"
+  final_result=1
+else
+  echo -e "$M_OK"
+fi
+
+
 
 ##
 ## Manage project checks
