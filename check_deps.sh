@@ -106,6 +106,7 @@ if [[ $license -eq 1 ]];then
   fi
   LIC_MANAGE_RES="$(echo $LIC_OUT | grep VCAST_MANAGE)"
   LIC_ATG_RES="$(echo $LIC_OUT | grep VCAST_ATG)"
+  LIC_BASELINING_RES="$(echo $LIC_OUT | grep VCAST_BASELINING)"
   lic_failed=0
   if [[ "$LIC_MANAGE_RES" != "" ]];then
     echo -n "Manage "
@@ -117,6 +118,12 @@ if [[ $license -eq 1 ]];then
     echo -n "ATG "
   else
     echo -n "(missing ATG) "
+    lic_failed=1
+  fi
+  if [[ "$LIC_BASELINING_RES" != "" ]];then
+    echo -n "Baselining "
+  else
+    echo -n "(missing Baselining) "
     lic_failed=1
   fi
   if [[ $lm_use_file -eq 1 ]];then
