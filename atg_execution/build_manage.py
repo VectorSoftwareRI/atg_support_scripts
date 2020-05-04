@@ -115,10 +115,25 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         )
 
         # Run it
-        _, _, returncode = atg_misc.run_cmd(full_cmd, self.cwd)
+        out, _, returncode = atg_misc.run_cmd(full_cmd, self.cwd)
 
-        # Manage sure it didn't fail
-        assert not returncode
+        # Did we get a non-zero return code?
+        if returncode:
+
+            # string that suggests there's a licensing failure
+            license_string = "icens"
+
+            # What's our base message?
+            base_error = "Command '{:s}' failed".format(full_cmd)
+
+            # What's our suffix?
+            if license_string in out:
+                suffix = " -- missing license?"
+            else:
+                suffix = ""
+
+            # Raise an error
+            raise RuntimeError("{:s}{:s}".format(base_error, suffix))
 
     def add_script(self, script_path, script_name):
         """
