@@ -41,6 +41,19 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # Call the super constructor
         super().__init__()
 
+        # Do we have a
+        self.atg_work_dir = configuration.options.atg_work_dir
+
+        # If it is non-None
+        if self.atg_work_dir is not None:
+
+            #  Clean-up
+            if os.path.exists(self.atg_work_dir):
+                shutil.rmtree(self.atg_work_dir)
+
+            # Make it
+            os.mkdir(self.atg_work_dir)
+
         # The set of environments to run
         self.impacted_environments = impacted_environments
 
@@ -72,6 +85,11 @@ class ProcessProject(atg_misc.ParallelExecutor):
         for env in self.impacted_environments:
             self.env_tsts[env] = {}
             self.merged_tsts[env] = {}
+
+            # Make working directories for each env
+            if self.atg_work_dir is not None:
+                env_name = os.path.basename(env)
+                os.mkdir(os.path.join(self.atg_work_dir, env_name))
 
         self.updated_files = set()
 
@@ -134,9 +152,15 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # What's the unit name for the current subprogram?
         unit = os.path.splitext(os.path.basename(src_file))[0]
 
+        # Where do we want the ATG artefacts to go?
+        if self.atg_work_dir is not None:
+            atg_output_location = os.path.join(self.atg_work_dir, env)
+        else:
+            atg_output_location = env_path
+
         # What's the prefix of our all outputs?
         output_prefix = os.path.join(
-            env_path,
+            atg_output_location,
             "{env:s}_{unit:s}_{routine:s}".format(
                 env=env, unit=unit, routine=routine_name
             ),
@@ -147,6 +171,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
         # Where is ATG going to write its tst to?
         tst_file = "{:s}.tst".format(output_prefix)
+
+        # Where to log the PyEDG output to?
+        pyedg_log_prefix = "{:s}_pyedg".format(output_prefix)
 
         # Build-up our environment object
         environ = os.environ.copy()
@@ -183,11 +210,19 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
         # Run PyEDG and get the return code
         _, _, returncode = atg_misc.run_cmd(
-            cmd, cwd=env_path, environ=environ, timeout=self.timeout
+            cmd,
+            cwd=env_path,
+            environ=environ,
+            timeout=self.timeout,
+            log_file_prefix=pyedg_log_prefix,
         )
 
         # If we didn't have a 0 return code, we have no tst file
         if returncode:
+            tst_file = None
+
+        # If we haven't generated a tst file, then mark it as so
+        if not os.path.exists(tst_file) or not os.path.isfile(tst_file):
             tst_file = None
 
         # We're about to update the shared state, so grab the lock
