@@ -187,6 +187,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # Where are we going to write our output?
         environ["VCAST_PYEDG_ATG_OUTPUT_FILE"] = tst_file
 
+        # Tell ATG to generate display attributes
+        environ["VCAST_ATG_BASELINING"] = "1"
+
         # What PyEDG script are we going to run?
         environ["VCAST_PYEDG_PATH"] = os.path.expandvars(
             "$VECTORCAST_DIR/python/vector/apps/atg_utils/run_atg.py"
