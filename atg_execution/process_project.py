@@ -217,12 +217,8 @@ class ProcessProject(atg_misc.ParallelExecutor):
             log_file_prefix=pyedg_log_prefix,
         )
 
-        # If we didn't have a 0 return code, we have no tst file
-        if returncode:
-            tst_file = None
-
-        # If we haven't generated a tst file, then mark it as so
-        if not os.path.exists(tst_file) or not os.path.isfile(tst_file):
+        # If we didn't have a 0 return code or we have no .tst, then we have no tst
+        if returncode or not os.path.exists(tst_file) or not os.path.isfile(tst_file):
             tst_file = None
 
         # We're about to update the shared state, so grab the lock
