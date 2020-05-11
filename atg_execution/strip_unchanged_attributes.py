@@ -34,13 +34,21 @@ def is_hex(s):
 
 
 class TstLine:
-
+    """
+    .tst line inspector
+    """
     def __init__(self, line):
         self.line = line
 
     @property
     def is_attribute(self):
         return self.line.startswith("TEST.ATTRIBUTES:")
+
+    @property
+    def attribute_line_key(self):
+        if not self.is_attribute:
+            return None
+        return self.line.split(":")[1].strip()
 
     @property
     def is_value(self):
@@ -143,24 +151,41 @@ class TstFileProcessor:
                         skip_line = False
 
 
-class TstScalarFinder(TstFileProcessor):
-
+class ProcForUnchanged(TstFileProcessor):
+    """
+    Processing for unchanged
+    """
     def __init__(self):
         self.scalar_inputs = []
 
     def process_test_line(self, line):
+        """
+        Process each test line right after we read it from the .tst file
+        """
         tst_line = TstLine(line)
         if tst_line.is_value:
             if tst_line.is_scalar_value and not tst_line.is_global:
-                print(self.subprogram, self.test_name, tst_line.value_line_key)
+                self.scalar_inputs.append(tst_line.value_line_key)
         return(line)
 
     def test_end_process(self):
-        pass
-        
+        """
+        Modify the test case in memory according to the data collected
+        while reading the file
+        """
+        modified_test = []
+        for line in self.current_test:
+            tst_line = TstLine(line)
+            if tst_line.is_attribute and tst_line.attribute_line_key in self.scalar_inputs:
+                    pass # removing
+            else:
+                modified_test.append(line)
+
+        self.current_test = modified_test
+
 
 def main():
-    sf = TstScalarFinder()
+    sf = ProcForUnchanged()
     sf.process("bl.tst", "proc.tst")
 
 if __name__ == "__main__":
