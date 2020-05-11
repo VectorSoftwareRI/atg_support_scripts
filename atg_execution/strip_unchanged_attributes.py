@@ -23,22 +23,22 @@
 import sys
 import re
 
-#import atg_execution.misc as atg_misc
+# import atg_execution.misc as atg_misc
 
-def is_hex(s):
-    try:
-        int(s, 16)
-    except ValueError:
-        return False
-    return True
+pointer_deref_matcher = re.compile("[\d*]")
 
 
 class TstLine:
     """
     .tst line inspector
     """
+
     def __init__(self, line):
         self.line = line
+
+    @property
+    def is_expected(self):
+        return self.line.startswith("TEST.EXPECTED:")
 
     @property
     def is_attribute(self):
@@ -47,6 +47,12 @@ class TstLine:
     @property
     def attribute_line_key(self):
         if not self.is_attribute:
+            return None
+        return self.line.split(":")[1].strip()
+
+    @property
+    def expected_line_key(self):
+        if not self.is_expected:
             return None
         return self.line.split(":")[1].strip()
 
@@ -67,23 +73,22 @@ class TstLine:
         return self.line.split(":")[2].strip()
 
     @property
-    def is_scalar_value(self):
+    def has_deref(self):
         if not self.is_value:
             return False
 
-        val = self.value_line_value
-        if val.isdigit() or is_hex(val):
+        if pointer_deref_matcher.search(self.value_line_key):
             return True
-        elif val == "<<MIN>>" or val == "<<MAX>>":
-            return True
-        
+
         return False
 
     @property
-    def is_alloc_status(self):
+    def has_alloc_status(self):
         if not self.is_value:
             return False
-        if self.value_line_value.startswith("<<malloc") or self.value_line_value.startswith("<<null"):
+        if self.value_line_value.startswith(
+            "<<malloc"
+        ) or self.value_line_value.startswith("<<null"):
             return True
 
     @property
@@ -91,16 +96,27 @@ class TstLine:
         return "<<GLOBAL>>" in self.value_line_key
 
 
-#@atg_misc.for_all_methods(atg_misc.log_entry_exit)
+# @atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class TstFileProcessor:
 
     TEST_START_MARKER = "TEST.UNIT"
     TEST_END_MARKER = "TEST.END"
 
     def process_test_line(self, line):
+        """
+        Processes each test line
+
+        Line gets ignored if this method returns None
+        """
         return line
 
     def test_end_process(self):
+        """
+        Gets called after we read an entire test
+
+        Here self.current_test can be modified before
+        it gets written to the output file
+        """
         pass
 
     def process(self, input_file, output_file):
@@ -130,8 +146,8 @@ class TstFileProcessor:
                         self.test_name = line.split(":")[1].strip()
 
                     line = self.process_test_line(line)
-
-                    self.current_test.append(line)
+                    if line:
+                        self.current_test.append(line)
 
                 if in_test and line.strip() == self.TEST_END_MARKER:
 
@@ -155,8 +171,26 @@ class ProcForUnchanged(TstFileProcessor):
     """
     Processing for unchanged
     """
+
     def __init__(self):
-        self.scalar_inputs = []
+        self.internal_inputs = {}
+
+    def get_base_key(self, key):
+        if "[" in key:
+            basekey = key.split("[")[0]
+            return basekey
+        else:
+            return key
+
+    def mark_internal(self, key):
+        self.internal_inputs.setdefault(self.get_base_key(key), True)
+
+    def mark_external(self, key):
+        self.internal_inputs[self.get_base_key(key)] = False
+
+    def is_internal(self, key):
+        basekey = self.get_base_key(key)
+        return self.internal_inputs.get(basekey, False)
 
     def process_test_line(self, line):
         """
@@ -164,9 +198,15 @@ class ProcForUnchanged(TstFileProcessor):
         """
         tst_line = TstLine(line)
         if tst_line.is_value:
-            if tst_line.is_scalar_value and not tst_line.is_global:
-                self.scalar_inputs.append(tst_line.value_line_key)
-        return(line)
+            if tst_line.has_alloc_status:
+                self.mark_external(tst_line.value_line_key)
+            elif tst_line.has_deref:
+                self.mark_external(tst_line.value_line_key)
+            elif tst_line.is_global:
+                self.mark_external(tst_line.value_line_key)
+            else:
+                self.mark_internal(tst_line.value_line_key)
+        return line
 
     def test_end_process(self):
         """
@@ -176,8 +216,10 @@ class ProcForUnchanged(TstFileProcessor):
         modified_test = []
         for line in self.current_test:
             tst_line = TstLine(line)
-            if tst_line.is_attribute and tst_line.attribute_line_key in self.scalar_inputs:
-                    pass # removing
+            if tst_line.is_attribute and self.is_internal(tst_line.attribute_line_key):
+                pass  # removing
+            elif tst_line.is_expected and self.is_internal(tst_line.expected_line_key):
+                pass  # removing
             else:
                 modified_test.append(line)
 
@@ -187,6 +229,7 @@ class ProcForUnchanged(TstFileProcessor):
 def main():
     sf = ProcForUnchanged()
     sf.process("bl.tst", "proc.tst")
+
 
 if __name__ == "__main__":
     main()
