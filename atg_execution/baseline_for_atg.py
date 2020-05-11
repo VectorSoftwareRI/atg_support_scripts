@@ -24,12 +24,14 @@ import os
 import shutil
 import filecmp
 import atg_execution.merge_display_attributes as atg_merge_attrs
+import atg_execution.strip_unchanged_attributes as atg_proc_unchanged
 import atg_execution.misc as atg_misc
 
 
 FILE_BL = "bl.tst"
 FILE_ATG = "atg.tst"
 FILE_MERGED = "merged.tst"
+FILE_UNCHANGED_REMOVED = "stripped_unch.tst"
 FILE_EXPECTEDS = "expecteds.tst"
 FILE_INTERMEDIATE = "intermediate.tst"
 FILE_STRIPPED = "stripped.tst"
@@ -102,6 +104,13 @@ class Baseline:
         file_merged = os.path.join(self.workdir, FILE_MERGED)
         atg_merge_attrs.MergeDisplayAttributes.merge(file_bl, file_atg, file_merged)
 
+    def strip_unchanged(self):
+        file_merged = os.path.join(self.workdir, FILE_MERGED)
+        file_unchanged_removed = os.path.join(self.workdir, FILE_UNCHANGED_REMOVED)
+        atg_proc_unchanged.ProcForUnchanged.strip_unchanged(
+            file_merged, file_unchanged_removed
+        )
+
     def strip_failures(self, file_1, file_2):
         vpython = os.path.join(VC_PATH, "vpython")
         strip_fail_script = os.path.join(SCRIPTS_HOME_DIR, "strip_failures.py")
@@ -147,6 +156,11 @@ class Baseline:
         #
         self.merge_attributes(atg_file)
 
+        #
+        # Strip unchanged
+        #
+        self.strip_unchanged()
+
         atg_misc.print_msg(
             "Executing test-cases for environment {:s}".format(self.env_dir)
         )
@@ -154,7 +168,9 @@ class Baseline:
         #
         # Run the .tst, generate the expecteds and then re-generate the .tst
         #
-        self.run_clicast(["-e", self.env_dir, "test", "script", "run", FILE_MERGED])
+        self.run_clicast(
+            ["-e", self.env_dir, "test", "script", "run", FILE_UNCHANGED_REMOVED]
+        )
         self.run_clicast(
             ["-e", self.env_dir, "execute", "batch", "--update_coverage_data"]
         )

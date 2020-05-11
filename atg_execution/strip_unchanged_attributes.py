@@ -23,7 +23,7 @@
 import sys
 import re
 
-# import atg_execution.misc as atg_misc
+import atg_execution.misc as atg_misc
 
 pointer_deref_matcher = re.compile("[\d*]")
 
@@ -96,7 +96,7 @@ class TstLine:
         return "<<GLOBAL>>" in self.value_line_key
 
 
-# @atg_misc.for_all_methods(atg_misc.log_entry_exit)
+@atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class TstFileProcessor:
 
     TEST_START_MARKER = "TEST.UNIT"
@@ -171,6 +171,10 @@ class ProcForUnchanged(TstFileProcessor):
     """
     Processing for unchanged
     """
+    @classmethod
+    def strip_unchanged(cls, in_file, out_file):
+        p = cls()
+        return p.process(in_file, out_file)
 
     def __init__(self):
         self.internal_inputs = {}
