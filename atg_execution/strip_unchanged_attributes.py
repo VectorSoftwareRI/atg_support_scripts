@@ -25,7 +25,7 @@ import re
 
 import atg_execution.misc as atg_misc
 
-pointer_deref_matcher = re.compile("[\d*]")
+pointer_deref_matcher = re.compile("\[\d*\]")
 
 
 class TstLine:
@@ -194,7 +194,8 @@ class ProcForUnchanged(TstFileProcessor):
 
     def is_internal(self, key):
         basekey = self.get_base_key(key)
-        return self.internal_inputs.get(basekey, False)
+        ret = self.internal_inputs.get(basekey, False)
+        return ret
 
     def process_test_line(self, line):
         """
