@@ -110,6 +110,9 @@ class TstFileProcessor:
         """
         return line
 
+    def test_start_process(self):
+        pass
+
     def test_end_process(self):
         """
         Gets called after we read an entire test
@@ -129,6 +132,8 @@ class TstFileProcessor:
             for line in fin:
 
                 if not in_test and line.startswith(self.TEST_START_MARKER):
+
+                    self.test_start_process()
 
                     in_test = True
                     subprogram_match = False
@@ -177,6 +182,9 @@ class ProcForUnchanged(TstFileProcessor):
         return p.process(in_file, out_file)
 
     def __init__(self):
+        self.internal_inputs = {}
+
+    def test_start_process(self):
         self.internal_inputs = {}
 
     def get_base_key(self, key):
@@ -233,7 +241,7 @@ class ProcForUnchanged(TstFileProcessor):
 
 def main():
     sf = ProcForUnchanged()
-    sf.process("bl.tst", "proc.tst")
+    sf.process("bl2.tst", "proc.tst")
 
 
 if __name__ == "__main__":
