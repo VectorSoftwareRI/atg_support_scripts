@@ -66,6 +66,14 @@ class TstLine:
             return None
         return self.line.split(":")[1].strip()
 
+    def is_value_line_for_subprog(self, subprog):
+        if not self.is_value:
+            return None
+        key_subprog = self.value_line_key.split(".")[1].strip()
+        if subprog == key_subprog:
+            return True
+        return False
+
     @property
     def value_line_value(self):
         if not self.is_value:
@@ -176,6 +184,7 @@ class ProcForUnchanged(TstFileProcessor):
     """
     Processing for unchanged
     """
+
     @classmethod
     def strip_unchanged(cls, in_file, out_file):
         p = cls()
@@ -208,17 +217,20 @@ class ProcForUnchanged(TstFileProcessor):
     def process_test_line(self, line):
         """
         Process each test line right after we read it from the .tst file
+
+            internal -- will be removed
         """
         tst_line = TstLine(line)
         if tst_line.is_value:
-            if tst_line.has_alloc_status:
-                self.mark_external(tst_line.value_line_key)
-            elif tst_line.has_deref:
-                self.mark_external(tst_line.value_line_key)
-            elif tst_line.is_global:
-                self.mark_external(tst_line.value_line_key)
-            else:
-                self.mark_internal(tst_line.value_line_key)
+            if tst_line.is_value_line_for_subprog(self.subprogram):
+                if tst_line.has_alloc_status:
+                    self.mark_external(tst_line.value_line_key)
+                elif tst_line.has_deref:
+                    self.mark_external(tst_line.value_line_key)
+                elif tst_line.is_global:
+                    self.mark_external(tst_line.value_line_key)
+                else:
+                    self.mark_internal(tst_line.value_line_key)
         return line
 
     def test_end_process(self):
