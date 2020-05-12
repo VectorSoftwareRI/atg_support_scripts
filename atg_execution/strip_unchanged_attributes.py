@@ -45,16 +45,29 @@ class TstLine:
         return self.line.startswith("TEST.ATTRIBUTES:")
 
     @property
-    def attribute_line_key(self):
-        if not self.is_attribute:
-            return None
+    def line_key(self):
+        assert self.is_attribute or self.is_expected or self.is_value
         return self.line.split(":")[1].strip()
 
     @property
+    def line_value(self):
+        assert self.is_attribute or self.is_expected or self.is_value
+        return self.line.split(":")[2].strip()
+
+    @property
+    def attribute_line_key(self):
+        assert self.is_attribute
+        return self.line_key
+
+    @property
     def expected_line_key(self):
-        if not self.is_expected:
-            return None
-        return self.line.split(":")[1].strip()
+        assert self.is_expected
+        return self.line_key
+
+    @property
+    def expected_line_value(self):
+        assert self.is_expected
+        return self.line_value
 
     @property
     def is_value(self):
@@ -62,46 +75,42 @@ class TstLine:
 
     @property
     def value_line_key(self):
-        if not self.is_value:
-            return None
-        return self.line.split(":")[1].strip()
+        assert self.is_value
+        return self.line_key
 
-    def is_value_line_for_subprog(self, subprog):
-        if not self.is_value:
-            return None
-        key_subprog = self.value_line_key.split(".")[1].strip()
+    @property
+    def value_line_value(self):
+        assert self.is_value
+        return self.line_value
+
+    def is_line_for_subprog(self, subprog):
+        assert self.is_value or self.is_expected or self.is_attribute
+        key_subprog = self.line_key.split(".")[1].strip()
         if subprog == key_subprog:
             return True
         return False
 
     @property
-    def value_line_value(self):
-        if not self.is_value:
-            return None
-        return self.line.split(":")[2].strip()
-
-    @property
     def has_deref(self):
-        if not self.is_value:
-            return False
-
-        if pointer_deref_matcher.search(self.value_line_key):
+        assert self.is_value or self.is_expected
+        if pointer_deref_matcher.search(self.line_key):
             return True
 
         return False
 
     @property
     def has_alloc_status(self):
-        if not self.is_value:
-            return False
-        if self.value_line_value.startswith(
-            "<<malloc"
-        ) or self.value_line_value.startswith("<<null"):
+        assert self.is_value or self.is_expected
+        val = self.line_value.strip().lower()
+        if val.startswith("<<malloc") or val == "<<null>>":
             return True
+        return False
 
     @property
     def is_global(self):
-        return "<<GLOBAL>>" in self.value_line_key
+        if not self.is_value and not self.is_expected:
+            return False
+        return "<<GLOBAL>>" in self.line_key
 
 
 @atg_misc.for_all_methods(atg_misc.log_entry_exit)
@@ -221,16 +230,16 @@ class ProcForUnchanged(TstFileProcessor):
             internal -- will be removed
         """
         tst_line = TstLine(line)
-        if tst_line.is_value:
-            if tst_line.is_value_line_for_subprog(self.subprogram):
+        if tst_line.is_value or tst_line.is_expected:
+            if tst_line.is_line_for_subprog(self.subprogram):
                 if tst_line.has_alloc_status:
-                    self.mark_external(tst_line.value_line_key)
+                    self.mark_external(tst_line.line_key)
                 elif tst_line.has_deref:
-                    self.mark_external(tst_line.value_line_key)
+                    self.mark_external(tst_line.line_key)
                 elif tst_line.is_global:
-                    self.mark_external(tst_line.value_line_key)
+                    self.mark_external(tst_line.line_key)
                 else:
-                    self.mark_internal(tst_line.value_line_key)
+                    self.mark_internal(tst_line.line_key)
         return line
 
     def test_end_process(self):
