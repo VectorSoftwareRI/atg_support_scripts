@@ -105,7 +105,7 @@ class Baseline:
         atg_merge_attrs.MergeDisplayAttributes.merge(file_bl, file_atg, file_merged)
 
     def strip_unchanged(self):
-        file_merged = os.path.join(self.workdir, FILE_MERGED)
+        file_merged = os.path.join(self.workdir, FILE_EXPECTEDS)
         file_unchanged_removed = os.path.join(self.workdir, FILE_UNCHANGED_REMOVED)
         atg_proc_unchanged.ProcForUnchanged.strip_unchanged(
             file_merged, file_unchanged_removed
@@ -156,11 +156,6 @@ class Baseline:
         #
         self.merge_attributes(atg_file)
 
-        #
-        # Strip unchanged
-        #
-        self.strip_unchanged()
-
         atg_misc.print_msg(
             "Executing test-cases for environment {:s}".format(self.env_dir)
         )
@@ -168,9 +163,7 @@ class Baseline:
         #
         # Run the .tst, generate the expecteds and then re-generate the .tst
         #
-        self.run_clicast(
-            ["-e", self.env_dir, "test", "script", "run", FILE_UNCHANGED_REMOVED]
-        )
+        self.run_clicast(["-e", self.env_dir, "test", "script", "run", FILE_MERGED])
         self.run_clicast(
             ["-e", self.env_dir, "execute", "batch", "--update_coverage_data"]
         )
@@ -184,6 +177,11 @@ class Baseline:
         )
 
         #
+        # Strip unchanged
+        #
+        self.strip_unchanged()
+
+        #
         # Rebuild the environment and import our tst with expected values --
         # execute it to get pass/fail data and then re-create the .tst
         #
@@ -194,7 +192,9 @@ class Baseline:
             return
 
         self.run_clicast(["-l", "c", "ENVironment", "script", "run", self.env_file])
-        self.run_clicast(["-e", self.env_dir, "test", "script", "run", FILE_EXPECTEDS])
+        self.run_clicast(
+            ["-e", self.env_dir, "test", "script", "run", FILE_UNCHANGED_REMOVED]
+        )
         self.run_clicast(
             ["-e", self.env_dir, "execute", "batch", "--update_coverage_data"]
         )
