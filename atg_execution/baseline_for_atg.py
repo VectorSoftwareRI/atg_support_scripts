@@ -105,10 +105,10 @@ class Baseline:
         atg_merge_attrs.MergeDisplayAttributes.merge(file_bl, file_atg, file_merged)
 
     def strip_unchanged(self):
-        file_merged = os.path.join(self.workdir, FILE_EXPECTEDS)
+        file_expecteds = os.path.join(self.workdir, FILE_EXPECTEDS)
         file_unchanged_removed = os.path.join(self.workdir, FILE_UNCHANGED_REMOVED)
         atg_proc_unchanged.ProcForUnchanged.strip_unchanged(
-            file_merged, file_unchanged_removed
+            file_expecteds, file_unchanged_removed
         )
 
     def strip_failures(self, file_1, file_2):
