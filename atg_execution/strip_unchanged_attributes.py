@@ -32,7 +32,6 @@ class TstLine:
     """
     .tst line inspector
     """
-
     def __init__(self, line):
         self.line = line
 
@@ -111,6 +110,16 @@ class TstLine:
         if not self.is_value and not self.is_expected:
             return False
         return "<<GLOBAL>>" in self.line_key
+
+    @property
+    def is_return(self):
+        if not self.is_value and not self.is_expected:
+            return False
+        line_key = self.line_key
+        # <unit>.<subprog>.<param>
+        if line_key.split(".")[2].strip() == "return":
+            return True
+        return False
 
 
 @atg_misc.for_all_methods(atg_misc.log_entry_exit)
@@ -238,6 +247,8 @@ class ProcForUnchanged(TstFileProcessor):
                     self.mark_external(tst_line.line_key)
                 elif tst_line.is_global:
                     self.mark_external(tst_line.line_key)
+                elif tst_line.is_return:
+                    self.mark_external(tst_line.line_key)
                 else:
                     self.mark_internal(tst_line.line_key)
         return line
@@ -262,7 +273,7 @@ class ProcForUnchanged(TstFileProcessor):
 
 def main():
     sf = ProcForUnchanged()
-    sf.process("bl2.tst", "proc.tst")
+    sf.process("expecteds.tst", "proc.tst")
 
 
 if __name__ == "__main__":
