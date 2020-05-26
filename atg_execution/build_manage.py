@@ -32,7 +32,7 @@ class ManageBuilder(atg_misc.ParallelExecutor):
     def __init__(self, configuration):
 
         # Call the super constructor
-        super().__init__()
+        super().__init__(configuration)
 
         # Path to our Manage project
         self.manage_vcm_path = configuration.manage_vcm_path

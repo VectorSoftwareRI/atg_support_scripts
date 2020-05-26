@@ -39,7 +39,7 @@ class ProcessProject(atg_misc.ParallelExecutor):
         self, configuration, impacted_environments, environment_dependencies,
     ):
         # Call the super constructor
-        super().__init__()
+        super().__init__(configuration)
 
         # Do we have a
         self.atg_work_dir = configuration.options.atg_work_dir

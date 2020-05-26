@@ -25,6 +25,7 @@
 import os
 import sys
 import logging
+import multiprocessing
 
 import atg_execution.build_manage as build_manage
 import atg_execution.debug_report as atg_debug_report
@@ -55,6 +56,10 @@ def process_options(options):
 
     # verbosity
     atg_misc.be_quiet = options.quiet
+
+    # If None or 0
+    if not options.workers:
+        options.workers = multiprocessing.cpu_count()
 
 
 def load_configuration(options):

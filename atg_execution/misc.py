@@ -237,9 +237,10 @@ class ParallelExecutor(object):
     in parallel
     """
 
-    def __init__(self):
-        # When running in parallel, how many workers?
-        self.worker_count = multiprocessing.cpu_count()
+    def __init__(self, configuration):
+
+        # Save our configuration object
+        self.configuration = configuration
 
         # Mutex to allow for threads to update class state
         self.mutex = multiprocessing.Lock()
@@ -260,7 +261,7 @@ class ParallelExecutor(object):
             execution_contexts.append([routine] + [list(routine_context)])
 
         # Worker pooler
-        pool = ThreadPool(self.worker_count)
+        pool = ThreadPool(self.configuration.options.workers)
 
         # Run the call method in parallel over the 'context'
         pool.map(wrap_class_method, execution_contexts, chunksize=1)

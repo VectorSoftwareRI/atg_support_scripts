@@ -67,6 +67,7 @@ def get_default_parser():
     parser.add("-lf", "--log_file", required=False, help="log file", type=str)
     parser.add("-v", "--verbose", required=False, help="verbose", type=boolean_string)
     parser.add("-q", "--quiet", required=False, help="quiet", type=boolean_string)
+    parser.add("-j", "--workers", required=False, help="workers", type=nullable_int)
     parser.add("--atg_work_dir", required=False, help="quiet", type=nullable_string)
 
     return parser
@@ -82,6 +83,12 @@ def nullable_string(s):
     if s == "None":
         return None
     return s
+
+
+def nullable_int(s):
+    if s == "None":
+        return None
+    return int(s)
 
 
 def validate_options(options):

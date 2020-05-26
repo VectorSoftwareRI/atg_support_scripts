@@ -42,7 +42,7 @@ class DiscoverEnvironmentDependencies(atg_misc.ParallelExecutor):
     def __init__(self, configuration, manage_builder):
 
         # Call the super constructor
-        super().__init__()
+        super().__init__(configuration)
 
         # What's the directory that contains our source files?
         self.repository_path = configuration.repository_path
