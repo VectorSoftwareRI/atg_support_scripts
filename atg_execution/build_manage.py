@@ -32,7 +32,7 @@ class ManageBuilder(atg_misc.ParallelExecutor):
     def __init__(self, configuration):
 
         # Call the super constructor
-        super().__init__(configuration)
+        super().__init__(configuration, display_progress_bar=True)
 
         # Path to our Manage project
         self.manage_vcm_path = configuration.manage_vcm_path
@@ -219,9 +219,8 @@ class ManageBuilder(atg_misc.ParallelExecutor):
 
     def build_environments(self):
         # Build the environments in parallel
-        atg_misc.print_msg("Building Manage environments")
+        atg_misc.print_msg("Building Manage environments ...")
         self.run_routine_parallel(self.build_env, self.all_environments)
-        atg_misc.print_msg("Manage environments built")
 
     def check_built_environments(self):
         # Build the environments in parallel
@@ -284,8 +283,6 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         """
         Builds a given environment name in the given location
         """
-        atg_misc.print_msg("Building environment {:s}".format(env_name))
-
         # What's our env going to be called?
         env_script = "{env:s}.env".format(env=env_name)
 
@@ -316,9 +313,8 @@ class ManageBuilder(atg_misc.ParallelExecutor):
 
         success = self.check_env(env_name, env_location, returncode=returncode)
 
-        atg_misc.print_msg(
-            "Environment {:s} built (success: {:s})".format(env_name, str(success))
-        )
+        # Update the progress bar
+        self.move_progress_bar()
 
     def check_success_build(self, returncode, built_env):
 
@@ -349,6 +345,9 @@ class ManageBuilder(atg_misc.ParallelExecutor):
 
         # Environment is good if we have all of these
         return all([zero_return_code, folder_exists, found_all, build_success])
+
+        # Update the progress bar
+        self.move_progress_bar()
 
 
 # EOF

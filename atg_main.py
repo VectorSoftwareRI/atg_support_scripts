@@ -152,6 +152,8 @@ def atg_execution(options):
     # Store files
     configuration.store_updated_tests(ia.updated_files)
 
+    atg_misc.print_msg("ATG execution completed!")
+
     return 0
 
 

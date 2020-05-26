@@ -127,11 +127,8 @@ class Baseline:
         max_iter=8,
         check_fixedpoint=True,
         copy_out_manage=True,
+        parallel_object=None,
     ):
-
-        atg_misc.print_msg(
-            "Generating baseline test-cases for environment {:s}".format(self.env_dir)
-        )
 
         assert (
             max_iter > 0
@@ -151,14 +148,13 @@ class Baseline:
         if run_atg:
             self.run_clicast(["-e", self.env_dir, "tools", "auto_atg_test", atg_file])
 
+        if parallel_object:
+            parallel_object.move_progress_bar()
+
         #
         # Merge baselining with ATG
         #
         self.merge_attributes(atg_file)
-
-        atg_misc.print_msg(
-            "Executing test-cases for environment {:s}".format(self.env_dir)
-        )
 
         #
         # Run the .tst, generate the expecteds and then re-generate the .tst
@@ -172,9 +168,8 @@ class Baseline:
             ["-e", self.env_dir, "test", "script", "create", FILE_EXPECTEDS]
         )
 
-        atg_misc.print_msg(
-            "Generating expected values for environment {:s}".format(self.env_dir)
-        )
+        if parallel_object:
+            parallel_object.move_progress_bar()
 
         #
         # Strip unchanged
@@ -203,6 +198,9 @@ class Baseline:
         )
 
         self.copyfile(FILE_INTERMEDIATE, "stripped_1.tst")
+
+        if parallel_object:
+            parallel_object.move_progress_bar()
 
         terminate = False
         for i in range(1, max_iter + 1):
@@ -235,7 +233,16 @@ class Baseline:
                 ["-e", self.env_dir, "test", "script", "create", next_file]
             )
 
+            if parallel_object:
+                parallel_object.move_progress_bar()
+
             if terminate:
+
+                # How many iterations are we skipping?
+                remaining_iters = max_iter - i - 1
+
+                # Ensure we wind-on correctly
+                parallel_object.move_progress_bar(count=remaining_iters)
                 break
 
         self.copyfile(next_file, FILE_FINAL)
@@ -246,6 +253,9 @@ class Baseline:
                     "..", "..", "environment", "{env_dir:s}", "{env_dir:s}.tst"
                 ).format(env_dir=self.env_dir),
             )
+
+        if parallel_object:
+            parallel_object.move_progress_bar()
 
 
 # EOF

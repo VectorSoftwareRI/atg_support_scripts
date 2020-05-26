@@ -39,7 +39,7 @@ class ProcessProject(atg_misc.ParallelExecutor):
         self, configuration, impacted_environments, environment_dependencies,
     ):
         # Call the super constructor
-        super().__init__(configuration)
+        super().__init__(configuration, display_progress_bar=True)
 
         # Do we have a
         self.atg_work_dir = configuration.options.atg_work_dir
@@ -232,6 +232,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
             # Update the shared state
             self.env_tsts[env_path][(unit, routine_name)] = tst_file
 
+        # Update the progress bar
+        self.move_progress_bar()
+
     def run_atg(self):
         """
         Runs ATG in parallel, with parallelism at the routine level
@@ -254,6 +257,8 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
         # What Python routine do we want to call?
         routine = self.run_atg_one_routine
+
+        atg_misc.print_msg("Generating baseline test-cases ...")
 
         # Run this routine in parallel given the provided contexts
         self.run_routine_parallel(routine, routine_contexts)
@@ -310,6 +315,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
             # Update the shared state
             self.merged_tsts[env_path] = merged_tst
 
+        # Update the progress bar
+        self.move_progress_bar()
+
     def baseline_one_environment(self, env_path):
         """
         Given an environment path, baselines the environment
@@ -326,23 +334,16 @@ class ProcessProject(atg_misc.ParallelExecutor):
             atg_file=merged_tst_name,
             max_iter=self.baseline_iterations,
             copy_out_manage=False,
+            parallel_object=self,
         )
 
         tests_generated = open(merged_tst_name).read().count("TEST.NAME:")
-
-        atg_misc.print_msg(
-            "Completed test-case generation for {:s} (tests generated: {:d})".format(
-                env_name, tests_generated
-            )
-        )
 
     def prune_and_merge_one_environment(self, env_path):
         """
         Given an environment path, baselines the environment
         """
         env_name = os.path.basename(env_path)
-
-        atg_misc.print_msg("Merging new and existing tests for {:s}".format(env_name))
 
         build_dir = os.path.dirname(env_path)
 
@@ -396,6 +397,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # Store the final tst
         self.updated_files.add(final_tst)
 
+        # Update the progress bar
+        self.move_progress_bar()
+
     def merge_atg_routine_tst(self):
         """
         Merges the routine-level tst files into one big file, with parallelism
@@ -410,6 +414,8 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
         # What Python routine do we want to call?
         routine = self.merge_one_environment
+
+        atg_misc.print_msg("Merging all ATG test-cases ...")
 
         # Run this routine in parallel given the provided context
         self.run_routine_parallel(routine, routine_context)
@@ -428,8 +434,26 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # What Python routine do we want to call?
         routine = self.baseline_one_environment
 
+        steps_per_stage = 0
+        # build environment + run build-in test-case generation
+        steps_per_stage += 1
+        # execute once and create expecteds
+        steps_per_stage += 1
+        # for each time we prune the expected results
+        steps_per_stage += self.baseline_iterations
+        # copy .tst to Manage folder
+        steps_per_stage += 1
+
+        atg_misc.print_msg(
+            "Baselining all environments ({:d} steps per environment) ...".format(
+                steps_per_stage
+            )
+        )
+
         # Run this routine in parallel given the provided context
-        self.run_routine_parallel(routine, routine_context)
+        self.run_routine_parallel(
+            routine, routine_context, steps_per_stage=steps_per_stage
+        )
 
     def prune_and_merge(self):
         """
@@ -444,6 +468,8 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
         # What Python routine do we want to call?
         routine = self.prune_and_merge_one_environment
+
+        atg_misc.print_msg("Pruning test-cases ...")
 
         # Run this routine in parallel given the provided context
         self.run_routine_parallel(routine, routine_context)

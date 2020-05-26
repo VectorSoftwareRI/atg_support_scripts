@@ -26,11 +26,10 @@ import shlex
 import os
 import multiprocessing
 import monotonic
+import logging
+import tqdm
 from multiprocessing.dummy import Pool as ThreadPool
 from contextlib import contextmanager
-import inspect
-
-import logging
 
 
 log = logging.getLogger("Incremental ATG")
@@ -237,15 +236,21 @@ class ParallelExecutor(object):
     in parallel
     """
 
-    def __init__(self, configuration):
+    def __init__(self, configuration, display_progress_bar=False):
 
         # Save our configuration object
         self.configuration = configuration
 
+        # Display a progress bar?
+        self.display_progress_bar = display_progress_bar
+
+        # Our actual progress bar object
+        self.progress_bar = None
+
         # Mutex to allow for threads to update class state
         self.mutex = multiprocessing.Lock()
 
-    def run_routine_parallel(self, routine, routine_contexts):
+    def run_routine_parallel(self, routine, routine_contexts, steps_per_stage=1):
         """
         Given a routine and routine context, builds-up what is neccessary to
         call the routine via a parallel pool
@@ -263,6 +268,11 @@ class ParallelExecutor(object):
         # Worker pooler
         pool = ThreadPool(self.configuration.options.workers)
 
+        # Create a progress bar
+        if self.display_progress_bar:
+            total = len(execution_contexts) * steps_per_stage
+            self.progress_bar = tqdm.tqdm(total=total)
+
         # Run the call method in parallel over the 'context'
         pool.map(wrap_class_method, execution_contexts, chunksize=1)
 
@@ -272,6 +282,11 @@ class ParallelExecutor(object):
         # Join all workers
         pool.join()
 
+        # Close the progress bar
+        if self.display_progress_bar:
+            self.progress_bar.close()
+            self.progress_bar = None
+
     @contextmanager
     def update_shared_state(self):
         self.mutex.acquire()
@@ -279,6 +294,10 @@ class ParallelExecutor(object):
             yield
         finally:
             self.mutex.release()
+
+    def move_progress_bar(self, count=1):
+        with self.update_shared_state():
+            self.progress_bar.update(count)
 
 
 # EOF
