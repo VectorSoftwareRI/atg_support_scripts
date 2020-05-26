@@ -28,6 +28,7 @@ configuration = namedtuple(
     [
         "repository_path",
         "manage_vcm_path",
+        "compiler_node",
         "final_tst_path",
         "find_unchanged_files",
         "store_updated_tests",
@@ -42,6 +43,12 @@ def parse_configuration(configuration_dict, options):
 
     repository_path = configuration_dict["repository_path"]
     manage_vcm_path = configuration_dict["manage_vcm_path"]
+
+    if "compiler_node" in configuration_dict:
+        compiler_node = configuration_dict["compiler_node"]
+    else:
+        compiler_node = None
+
     if "final_tst_path" not in configuration_dict:
         manage_dir = os.path.dirname(manage_vcm_path)
         manage_project = os.path.splitext(os.path.basename(manage_vcm_path))[0]
@@ -59,6 +66,7 @@ def parse_configuration(configuration_dict, options):
     return configuration(
         repository_path,
         manage_vcm_path,
+        compiler_node,
         final_tst_path,
         find_unchanged_files,
         store_updated_tests,

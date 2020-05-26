@@ -32,6 +32,7 @@ class TstLine:
     """
     .tst line inspector
     """
+
     def __init__(self, line):
         self.line = line
 

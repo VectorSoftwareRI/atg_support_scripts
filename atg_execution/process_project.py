@@ -89,7 +89,8 @@ class ProcessProject(atg_misc.ParallelExecutor):
             # Make working directories for each env
             if self.atg_work_dir is not None:
                 env_name = os.path.basename(env)
-                os.mkdir(os.path.join(self.atg_work_dir, env_name))
+                env_hash = os.path.basename(os.path.dirname(env))
+                os.mkdir(os.path.join(self.atg_work_dir, env_hash))
 
         self.updated_files = set()
 
@@ -154,7 +155,8 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
         # Where do we want the ATG artefacts to go?
         if self.atg_work_dir is not None:
-            atg_output_location = os.path.join(self.atg_work_dir, env)
+            build_hash = os.path.basename(os.path.dirname(env_path))
+            atg_output_location = os.path.join(self.atg_work_dir, build_hash)
         else:
             atg_output_location = env_path
 

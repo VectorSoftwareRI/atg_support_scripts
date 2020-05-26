@@ -34,7 +34,11 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         # Call the super constructor
         super().__init__()
 
+        # Path to our Manage project
         self.manage_vcm_path = configuration.manage_vcm_path
+
+        # Compiler node
+        self.compiler_node = configuration.compiler_node
 
         # Manage file must exist
         assert os.path.exists(self.manage_vcm_path) and os.path.isfile(
@@ -154,7 +158,13 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         """
 
         # Build the project
-        build_project = "--build"
+        if self.compiler_node:
+            build_project = "--level {:s}".format(self.compiler_node)
+        else:
+            build_project = ""
+
+        build_project = "{:s} --build".format(build_project)
+
         self.run_manage_command(build_project)
 
         # Make sure we now have a build folder!
