@@ -5,14 +5,26 @@ import json
 import operator
 import collections
 import tqdm
+import re
 
 
 ALT_EXC_PREFIX = "## --- "
 EXC_PREFIX = "## "
 EXC_ARROW = "==>"
 
-# DUMP_ARROW_EXCEPTIONS = [ "Trying to overwrite the value when overwrite isn't enabled", "Needs-Alloc handling crashed", "Region size exceeds limit", "Non-NULL pointer const used" ]
-DUMP_ARROW_EXCEPTIONS = []
+DUMP_ARROW_EXCEPTIONS = [
+    "Cannot generate value line for",
+    "Cannot get offset for field which is not relevant",
+    "Expecting a fieldpath ending with function pointer",
+    "Function pointer has no candidate function mapping",
+    "Invalid TEST.VALUE line",
+    "Needs-Alloc handling crashed",
+    "Non-NULL pointer const used",
+    "Region size exceeds limit",
+    "Trying to overwrite the value",
+    "Unable to find a VCAST user global",
+    "Unable to get allocation const",
+]
 
 
 def find_files_with_ext(dirpath, extension):
@@ -27,21 +39,36 @@ def find_files_with_ext(dirpath, extension):
     return all_files
 
 
+last_line_re = re.compile(r"^## [A-z_]*:")
+
+
 class ExceptionData:
     def __init__(self):
         self.lines = []
+        self._last_line = None
 
     def add_line(self, line):
         self.lines.append(line.strip())
 
-    def get_last_line(self):
-        return self.lines[-1]
+    @property
+    def last_line(self):
+        if not self._last_line:
+            last_line = self.lines[-1]
+            if not re.match(last_line_re, last_line):
+                # remove the current last line
+                self.lines = self.lines[:-2]
+
+                # Get the _new_ last line
+                last_line = self.lines[-1]
+            self._last_line = last_line
+
+        return self._last_line
 
     def sanitise_second_arrow(self):
         """
         Dumps anything after the second ==>
         """
-        last_line = self.get_last_line()
+        last_line = self.last_line
         if EXC_ARROW not in last_line:
             return
         split_line = last_line.split(EXC_ARROW)
@@ -54,7 +81,7 @@ class ExceptionData:
         Dumps everything after ==> when the line contains
         something from the DUMP_ARROW_EXCEPTIONS list
         """
-        last_line = self.get_last_line()
+        last_line = self.last_line
         sanitisation_needed = False
 
         for text in DUMP_ARROW_EXCEPTIONS:
