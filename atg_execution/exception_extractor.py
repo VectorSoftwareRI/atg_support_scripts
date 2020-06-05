@@ -2,27 +2,29 @@
 
 import os
 import json
+import operator
+import collections
+import tqdm
+
 
 ALT_EXC_PREFIX = "## --- "
 EXC_PREFIX = "## "
 EXC_ARROW = "==>"
 
-DUMP_ARROW_EXCEPTIONS = [
-    "Trying to overwrite the value when overwrite isn't enabled",
-    "Needs-Alloc handling crashed",
-    "Region size exceeds limit",
-    "Non-NULL pointer const used",
-]
+# DUMP_ARROW_EXCEPTIONS = [ "Trying to overwrite the value when overwrite isn't enabled", "Needs-Alloc handling crashed", "Region size exceeds limit", "Non-NULL pointer const used" ]
+DUMP_ARROW_EXCEPTIONS = []
 
 
 def find_files_with_ext(dirpath, extension):
     """
     Generator finding all the .tst files
     """
+    all_files = set()
     for root, dirs, files in os.walk(dirpath):
         for f in files:
             if f.endswith(extension):
-                yield os.path.join(root, f)
+                all_files.add(os.path.join(root, f))
+    return all_files
 
 
 class ExceptionData:
@@ -112,8 +114,11 @@ class TstStats:
     def process_all_tst_files(self):
 
         tst_files = find_files_with_ext(".", ".tst")
-        for tst_path in tst_files:
-            self.process_tst_file(tst_path)
+
+        with tqdm.tqdm(total=len(tst_files)) as pbar:
+            for tst_path in tst_files:
+                self.process_tst_file(tst_path)
+                pbar.update(1)
 
     def save_exception(self, exception_data):
         exception_data.sanitise()
@@ -156,6 +161,14 @@ class TstStats:
         if ex_open:
             self.save_current_exception()
 
+    def _sort_counts(self):
+        # Sort based on the counts
+        self.exception_counts = collections.OrderedDict(
+            sorted(
+                self.exception_counts.items(), key=operator.itemgetter(1), reverse=True
+            )
+        )
+
     def print_exceptions(self):
 
         for exception, count in self.exception_counts.items():
@@ -182,6 +195,8 @@ def main():
     """
     tst_stats = TstStats()
     tst_stats.run()
+
+    tst_stats._sort_counts()
 
     # tst_stats.print_exceptions()
     # tst_stats.save_json()
