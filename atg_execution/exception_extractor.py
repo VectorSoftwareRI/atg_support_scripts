@@ -7,7 +7,13 @@ ALT_EXC_PREFIX = "## --- "
 EXC_PREFIX = "## "
 EXC_ARROW = "==>"
 
-DUMP_ARROW_EXCEPTIONS = [ "Trying to overwrite the value when overwrite isn't enabled", "Needs-Alloc handling crashed", "Region size exceeds limit", "Non-NULL pointer const used" ]
+DUMP_ARROW_EXCEPTIONS = [
+    "Trying to overwrite the value when overwrite isn't enabled",
+    "Needs-Alloc handling crashed",
+    "Region size exceeds limit",
+    "Non-NULL pointer const used",
+]
+
 
 def find_files_with_ext(dirpath, extension):
     """
@@ -20,7 +26,6 @@ def find_files_with_ext(dirpath, extension):
 
 
 class ExceptionData:
-
     def __init__(self):
         self.lines = []
 
@@ -74,8 +79,8 @@ class ExceptionData:
     def key_data(self):
         return str(self)
 
-class TstLine:
 
+class TstLine:
     @staticmethod
     def is_exception_start(line):
         return EXC_PREFIX in line and "Traceback" in line
@@ -88,11 +93,11 @@ class TstLine:
     def normalise(line):
         line = line.strip()
         if EXC_PREFIX in line and line.startswith(ALT_EXC_PREFIX):
-            line = EXC_PREFIX + line[len(ALT_EXC_PREFIX):]
+            line = EXC_PREFIX + line[len(ALT_EXC_PREFIX) :]
         return line
 
-class TstStats:
 
+class TstStats:
     def __init__(self, root_dir=None):
         if root_dir is None:
             self.root_dir = "."
@@ -151,7 +156,6 @@ class TstStats:
         if ex_open:
             self.save_current_exception()
 
-
     def print_exceptions(self):
 
         for exception, count in self.exception_counts.items():
@@ -170,6 +174,7 @@ class TstStats:
                 f.write(str(count) + "\n")
                 f.write(exception + "\n")
                 f.write("=" * 20 + "\n")
+
 
 def main():
     """
