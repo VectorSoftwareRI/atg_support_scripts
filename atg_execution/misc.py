@@ -173,6 +173,9 @@ def run_cmd(cmd, cwd, environ=None, timeout=None, log_file_prefix=None, shell=Tr
         "env": environ,
     }
 
+    # Did we kill this process by a timeout?
+    timeout_exceeded = False
+
     # Start a timer
     start = monotonic.monotonic()
 
@@ -190,6 +193,9 @@ def run_cmd(cmd, cwd, environ=None, timeout=None, log_file_prefix=None, shell=Tr
             # Grab the output
             stdout, stderr = process.communicate()
 
+            # Record that we exceeded the timeout value
+            timeout_exceeded = True
+
     # End the clock
     end = monotonic.monotonic()
 
@@ -204,6 +210,9 @@ def run_cmd(cmd, cwd, environ=None, timeout=None, log_file_prefix=None, shell=Tr
 
         # Write the duration to the log
         modified_stdout += "\nElapsed seconds: {:.2f}\n".format(elapsed_time)
+
+        # Did we kill this via timeout?
+        modified_stdout += "\nTimeout exceeded: {}\n".format(timeout_exceeded)
 
         # What's the return code?
         returncode = process.returncode
