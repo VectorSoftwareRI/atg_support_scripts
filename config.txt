@@ -9,5 +9,6 @@ allow_moves = True
 allow_broken_environments = False
 quiet = False
 verbose = True
+strict_rc = True
 atg_work_dir = None
 workers = None

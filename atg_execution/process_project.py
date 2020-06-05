@@ -41,7 +41,7 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # Call the super constructor
         super().__init__(configuration, display_progress_bar=True)
 
-        # Do we have a
+        # Do we have a work directory?
         self.atg_work_dir = configuration.options.atg_work_dir
 
         # If it is non-None
@@ -74,6 +74,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
         # Where are the tsts going to go?
         self.final_tst_path = configuration.final_tst_path
+
+        # Are we strictly checking return codes?
+        self.strict_rc = configuration.options.strict_rc
 
         # Make our output path
         if not os.path.exists(self.final_tst_path):
@@ -222,8 +225,12 @@ class ProcessProject(atg_misc.ParallelExecutor):
             log_file_prefix=pyedg_log_prefix,
         )
 
+        # If we're using 'strict return codes' and we have a return code, then
+        # that's a return code failure
+        rc_failure = self.strict_rc and returncode
+
         # If we didn't have a 0 return code or we have no .tst, then we have no tst
-        if returncode or not os.path.exists(tst_file) or not os.path.isfile(tst_file):
+        if rc_failure or not os.path.exists(tst_file) or not os.path.isfile(tst_file):
             tst_file = None
 
         # We're about to update the shared state, so grab the lock

@@ -67,6 +67,13 @@ def get_default_parser():
     parser.add("-lf", "--log_file", required=False, help="log file", type=str)
     parser.add("-v", "--verbose", required=False, help="verbose", type=boolean_string)
     parser.add("-q", "--quiet", required=False, help="quiet", type=boolean_string)
+    parser.add(
+        "-sr",
+        "--strict_rc",
+        required=False,
+        help="strict return code checking",
+        type=boolean_string,
+    )
     parser.add("-j", "--workers", required=False, help="workers", type=nullable_int)
     parser.add("--atg_work_dir", required=False, help="quiet", type=nullable_string)
 
