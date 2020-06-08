@@ -12,20 +12,6 @@ ALT_EXC_PREFIX = "## --- "
 EXC_PREFIX = "## "
 EXC_ARROW = "==>"
 
-DUMP_ARROW_EXCEPTIONS = [
-    "Cannot generate value line for",
-    "Cannot get offset for field which is not relevant",
-    "Expecting a fieldpath ending with function pointer",
-    "Function pointer has no candidate function mapping",
-    "Invalid TEST.VALUE line",
-    "Needs-Alloc handling crashed",
-    "Non-NULL pointer const used",
-    "Region size exceeds limit",
-    "Trying to overwrite the value",
-    "Unable to find a VCAST user global",
-    "Unable to get allocation const",
-]
-
 
 def find_files_with_ext(dirpath, extension):
     """
@@ -44,16 +30,66 @@ last_line_re = re.compile(r"^## [A-z_]*:")
 
 class LineSanitiser:
 
-    ACTIONS = {"Region size exceeds limit": "remove_region_name"}
+    ACTIONS = {
+        "Region size exceeds limit": "remove_region_name",
+        "Cannot generate value line for": "remove_after_second_arrow",
+        "Cannot get offset for field which is not relevant": "remove_after_second_arrow",
+        "Expecting a fieldpath ending with function pointer": "remove_after_second_arrow",
+        "Function pointer has no candidate function mapping": "remove_after_second_arrow",
+        "Non-NULL pointer const used": "remove_after_second_arrow",
+        "Trying to overwrite the value": "remove_after_second_arrow",
+        "Unable to find a VCAST user global": "remove_after_second_arrow",
+        "Unable to get allocation const": "remove_after_second_arrow",
+        "Missing memory region": "remove_after_second_arrow",
+        "Trying to overwrite the value": "sanitise_invalid_test_value_line",
+        "Invalid TEST.VALUE line": "sanitise_invalid_test_value_line",
+        "Needs-Alloc handling crashed": "remove_after_first_arrow",
+    }
 
     def __init__(self, line):
         self.line = line
 
     def proc(self):
+
         for action_trigger, action_name in LineSanitiser.ACTIONS.items():
             if action_trigger in self.line:
-                print(action_name)
-        return line
+                try:
+                    action_method = getattr(self, action_name)
+                except AttributeError:
+                    raise RuntimeError(
+                        "Action not handled/installed: {:s}".format(str(e))
+                    )
+
+                action_method()
+
+        return self.line
+
+    def remove_region_name(self):
+        try:
+            left, right = self.line.split("region=", 1)
+            right = right.split(" ", 1)[1]
+            self.line = left + right
+        except Exception:
+            # if failed, fallback to remove_after_second_arrow
+            self.remove_after_second_arrow()
+
+    def remove_after_second_arrow(self):
+        if EXC_ARROW not in self.line:
+            return
+        split_line = self.line.split(EXC_ARROW)
+        if len(split_line) == 3:
+            new_line = EXC_ARROW.join(split_line[:2])
+            self.line = new_line
+
+    def sanitise_invalid_test_value_line(self):
+        self.remove_after_second_arrow()
+        try:
+            left, right = self.line.split(EXC_ARROW, 1)
+            right = right.split("value: ", 1)[1]
+            right = right[:-1]  # remove ")"
+        except Exception:
+            return
+        self.line = left + right
 
 
 class ExceptionData:
@@ -78,23 +114,7 @@ class ExceptionData:
 
         return self._last_line
 
-    def sanitise_second_arrow(self):
-        """
-        Dumps anything after the second ==>
-        """
-        last_line = self.last_line
-        if EXC_ARROW not in last_line:
-            return
-        split_line = last_line.split(EXC_ARROW)
-        if len(split_line) == 3:
-            new_line = EXC_ARROW.join(split_line[:2])
-            self.replace_last_line(new_line)
-
-    def sanitise_dump_after(self):
-        """
-        Dumps everything after ==> when the line contains
-        something from the DUMP_ARROW_EXCEPTIONS list
-        """
+    def sanitise(self):
         last_line = self.last_line
         sanitisation_needed = False
 
@@ -102,20 +122,6 @@ class ExceptionData:
         sanitised_line = line_sanitiser.proc()
         if sanitised_line != last_line:
             self.replace_last_line(sanitised_line)
-
-        for text in DUMP_ARROW_EXCEPTIONS:
-            if text in last_line:
-                sanitisation_needed = True
-                break
-
-        if sanitisation_needed:
-            split_line = last_line.split(EXC_ARROW)
-            new_line = split_line[0]
-            self.replace_last_line(new_line)
-
-    def sanitise(self):
-        self.sanitise_second_arrow()
-        self.sanitise_dump_after()
 
     def replace_last_line(self, new_line):
         self.lines.pop()
