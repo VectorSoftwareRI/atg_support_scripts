@@ -69,7 +69,7 @@ class LineSanitiser:
         Example:
 
         IN:
-        ## ATGUnexpected: Region size exceeds limit ==> size=-1013 region=inp:inp_socket limit=128 ==> tk_pointer:tk_struct
+        ## ATGUnexpected: Region size exceeds limit ==> size=-1013 region=a:b limit=128 ==> tk_pointer:tk_struct
 
         OUT:
         ## ATGUnexpected: Region size exceeds limit ==> size=-1013 limit=128 ==> tk_pointer:tk_struct
@@ -87,7 +87,7 @@ class LineSanitiser:
         Example:
 
         IN:
-        ## ATGUnexpected: Region size exceeds limit ==> size=-1013 region=inp:inp_socket limit=128 ==> tk_pointer:tk_struct
+        ## ATGUnexpected: Region size exceeds limit ==> size=-1013 region=a:b limit=128 ==> tk_pointer:tk_struct
 
         OUT:
         ## ATGUnexpected: Region size exceeds limit
@@ -103,7 +103,7 @@ class LineSanitiser:
         Example:
 
         IN:
-        ## ATGUnexpected: Region size exceeds limit ==> size=-1013 region=inp:inp_socket limit=128 ==> tk_pointer:tk_struct
+        ## ATGUnexpected: Region size exceeds limit ==> size=-1013 region=a:b limit=128 ==> tk_pointer:tk_struct
 
         OUT:
         ## ATGUnexpected: Region size exceeds limit ==> size=-1013 region=inp:inp_socket limit=128
@@ -120,7 +120,7 @@ class LineSanitiser:
         Example:
 
         IN:
-        ## ATGUnexpected: Invalid TEST.VALUE line (validation failed) ==> (key: ticDec.((uchar *)BF_DATA)[mic[0]] value: <<malloc        1>>)
+        ## ATGUnexpected: Invalid TEST.VALUE line (validation failed) ==> (key: boo value: <<malloc 1>>)
 
         OUT:
         ## ATGUnexpected: Invalid TEST.VALUE line (validation failed) value: <<malloc 1>>
