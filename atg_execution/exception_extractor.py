@@ -51,10 +51,10 @@ class LineSanitiser:
 
     def proc(self):
 
-        for action_trigger, action_name in LineSanitiser.ACTIONS.items():
-            if action_trigger in self.line:
+        for trigger, action_name in LineSanitiser.ACTIONS.items():
+            if trigger in self.line and False:
                 try:
-                    action_method = getattr(self, action_name)
+                    action_method = getattr(self, "action_" + action_name)
                 except AttributeError as e:
                     raise RuntimeError(
                         "Action not handled/installed: {:s}".format(str(e))
@@ -64,7 +64,16 @@ class LineSanitiser:
 
         return self.line
 
-    def remove_region_name(self):
+    def action_remove_region_name(self):
+        """
+        Example:
+
+        IN:
+        ## ATGUnexpected: Region size exceeds limit ==> size=-1013 region=inp:inp_socket limit=128 ==> tk_pointer:tk_struct
+
+        OUT:
+        ## ATGUnexpected: Region size exceeds limit ==> size=-1013 limit=128 ==> tk_pointer:tk_struct
+        """
         try:
             left, right = self.line.split("region=", 1)
             right = right.split(" ", 1)[1]
@@ -73,14 +82,32 @@ class LineSanitiser:
             # if failed, fallback to remove_after_second_arrow
             self.remove_after_second_arrow()
 
-    def remove_after_first_arrow(self):
+    def action_remove_after_first_arrow(self):
+        """
+        Example:
+
+        IN:
+        ## ATGUnexpected: Region size exceeds limit ==> size=-1013 region=inp:inp_socket limit=128 ==> tk_pointer:tk_struct
+
+        OUT:
+        ## ATGUnexpected: Region size exceeds limit
+        """
         if EXC_ARROW not in self.line:
             return
         split_line = self.line.split(EXC_ARROW, 1)
         if len(split_line) == 2:
             self.line = split_line[0]
 
-    def remove_after_second_arrow(self):
+    def action_remove_after_second_arrow(self):
+        """
+        Example:
+
+        IN:
+        ## ATGUnexpected: Region size exceeds limit ==> size=-1013 region=inp:inp_socket limit=128 ==> tk_pointer:tk_struct
+
+        OUT:
+        ## ATGUnexpected: Region size exceeds limit ==> size=-1013 region=inp:inp_socket limit=128
+        """
         if EXC_ARROW not in self.line:
             return
         split_line = self.line.split(EXC_ARROW)
@@ -88,7 +115,16 @@ class LineSanitiser:
             new_line = EXC_ARROW.join(split_line[:2])
             self.line = new_line
 
-    def sanitise_invalid_test_value_line(self):
+    def action_sanitise_invalid_test_value_line(self):
+        """
+        Example:
+
+        IN:
+        ## ATGUnexpected: Invalid TEST.VALUE line (validation failed) ==> (key: ticDec.((uchar *)BF_DATA)[mic[0]] value: <<malloc        1>>)
+
+        OUT:
+        ## ATGUnexpected: Invalid TEST.VALUE line (validation failed) value: <<malloc 1>>
+        """
         self.remove_after_second_arrow()
         try:
             left, right = self.line.split(EXC_ARROW, 1)
