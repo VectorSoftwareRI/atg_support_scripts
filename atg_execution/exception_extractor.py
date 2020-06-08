@@ -43,7 +43,7 @@ class LineSanitiser:
         "Missing memory region": "remove_after_second_arrow",
         "Trying to overwrite the value": "sanitise_invalid_test_value_line",
         "Invalid TEST.VALUE line": "sanitise_invalid_test_value_line",
-        "Needs-Alloc handling crashed": "remove_after_first_arrow",
+        "Needs-Alloc handling crashed": "remove_after_second_arrow",
     }
 
     def __init__(self, line):
@@ -55,7 +55,7 @@ class LineSanitiser:
             if action_trigger in self.line:
                 try:
                     action_method = getattr(self, action_name)
-                except AttributeError:
+                except AttributeError as e:
                     raise RuntimeError(
                         "Action not handled/installed: {:s}".format(str(e))
                     )
