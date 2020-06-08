@@ -43,7 +43,7 @@ class LineSanitiser:
         "Missing memory region": "remove_after_second_arrow",
         "Trying to overwrite the value": "sanitise_invalid_test_value_line",
         "Invalid TEST.VALUE line": "sanitise_invalid_test_value_line",
-        "Needs-Alloc handling crashed": "remove_after_second_arrow",
+        "Needs-Alloc handling crashed": "remove_after_first_arrow",
     }
 
     def __init__(self, line):
@@ -72,6 +72,13 @@ class LineSanitiser:
         except Exception:
             # if failed, fallback to remove_after_second_arrow
             self.remove_after_second_arrow()
+
+    def remove_after_first_arrow(self):
+        if EXC_ARROW not in self.line:
+            return
+        split_line = self.line.split(EXC_ARROW, 1)
+        if len(split_line) == 2:
+            self.line = split_line[0]
 
     def remove_after_second_arrow(self):
         if EXC_ARROW not in self.line:
