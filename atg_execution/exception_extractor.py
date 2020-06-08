@@ -42,6 +42,20 @@ def find_files_with_ext(dirpath, extension):
 last_line_re = re.compile(r"^## [A-z_]*:")
 
 
+class LineSanitiser:
+
+    ACTIONS = {"Region size exceeds limit": "remove_region_name"}
+
+    def __init__(self, line):
+        self.line = line
+
+    def proc(self):
+        for action_trigger, action_name in LineSanitiser.ACTIONS.items():
+            if action_trigger in self.line:
+                print(action_name)
+        return line
+
+
 class ExceptionData:
     def __init__(self):
         self.lines = []
@@ -84,6 +98,11 @@ class ExceptionData:
         last_line = self.last_line
         sanitisation_needed = False
 
+        line_sanitiser = LineSanitiser(last_line)
+        sanitised_line = line_sanitiser.proc()
+        if sanitised_line != last_line:
+            self.replace_last_line(sanitised_line)
+
         for text in DUMP_ARROW_EXCEPTIONS:
             if text in last_line:
                 sanitisation_needed = True
@@ -101,6 +120,7 @@ class ExceptionData:
     def replace_last_line(self, new_line):
         self.lines.pop()
         self.lines.append(new_line)
+        self._last_line = None
 
     def __str__(self):
         return "\n".join(self.lines)
