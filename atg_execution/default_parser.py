@@ -75,7 +75,18 @@ def get_default_parser():
         type=boolean_string,
     )
     parser.add("-j", "--workers", required=False, help="workers", type=nullable_int)
-    parser.add("--atg_work_dir", required=False, help="quiet", type=nullable_string)
+    parser.add(
+        "--atg_work_dir",
+        required=False,
+        help="set the ATG working directory",
+        type=nullable_string,
+    )
+    parser.add(
+        "--gen_fptrs",
+        required=False,
+        help="Generate function pointers",
+        type=nullable_string,
+    )
 
     return parser
 
