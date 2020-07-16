@@ -35,7 +35,7 @@ class LineSanitiser:
         "Cannot generate value line for": "remove_after_second_arrow",
         "Cannot get offset for field which is not relevant": "remove_after_second_arrow",
         "Expecting a fieldpath ending with function pointer": "remove_after_second_arrow",
-        "Function pointer has no candidate function mapping": "remove_after_second_arrow",
+        "Function pointer has no candidate function mapping": "remove_after_first_arrow",
         "Non-NULL pointer const used": "remove_after_second_arrow",
         "Trying to overwrite the value": "remove_after_second_arrow",
         "Unable to find a VCAST user global": "remove_after_second_arrow",
