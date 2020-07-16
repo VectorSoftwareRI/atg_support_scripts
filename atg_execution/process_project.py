@@ -23,6 +23,7 @@
 import os
 import shutil
 import re
+import glob
 
 import atg_execution.baseline_for_atg as baseline_for_atg
 import atg_execution.misc as atg_misc
@@ -281,6 +282,80 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # Run this routine in parallel given the provided contexts
         self.run_routine_parallel(routine, routine_contexts)
 
+    def gen_fptrs_one_environment(self, env_path):
+        """
+        Runs a single routine in an environment via ATG
+        """
+
+        # What's the name of this environment?
+        env = os.path.basename(env_path)
+
+        # What's the working dir?
+        workdir = os.path.dirname(env_path)
+
+        # Where do we want the ATG artefacts to go?
+        if self.atg_work_dir is not None:
+            build_hash = os.path.basename(os.path.dirname(env_path))
+            atg_output_location = os.path.join(self.atg_work_dir, build_hash)
+        else:
+            atg_output_location = workdir
+
+        # What's the prefix of our all outputs?
+        output_prefix = os.path.join(atg_output_location, "{env:s}".format(env=env),)
+
+        # Where to log the vpython output to?
+        pyedg_log_prefix = "{:s}_env_modifier".format(output_prefix)
+
+        # Build-up our vpython command
+        cmd = os.path.expandvars(
+            "$VECTORCAST_DIR/vpython $VECTORCAST_DIR/python/vector/apps/atg_utils/fptr_env_modifier.py"
+        )
+
+        # Run PyEDG and get the return code
+        out, _, returncode = atg_misc.run_cmd(
+            cmd, cwd=workdir, timeout=self.timeout, log_file_prefix=pyedg_log_prefix,
+        )
+
+        if ".env modified." in out:
+
+            # Delete the old build
+            shutil.rmtree(env_path)
+
+            # Rebuild the environment
+            cmd = os.path.expandvars(
+                "$VECTORCAST_DIR/clicast -l c environment script run {env:s}.env".format(
+                    env=env
+                )
+            )
+
+            rebuild_log_prefix = "{:s}_rebuild".format(output_prefix)
+
+            _, _, returncode = atg_misc.run_cmd(
+                cmd,
+                cwd=workdir,
+                timeout=self.timeout,
+                log_file_prefix=rebuild_log_prefix,
+            )
+
+        # Update the progress bar
+        self.move_progress_bar()
+
+    def gen_fptrs(self):
+        """
+        Generates function pointer mappings in parallel
+        """
+
+        # We want to process all environments
+        routine_context = [[env] for env in self.impacted_environments]
+
+        # What Python routine do we want to call?
+        routine = self.gen_fptrs_one_environment
+
+        atg_misc.print_msg("Generating function pointers...")
+
+        # Run this routine in parallel given the provided contexts
+        self.run_routine_parallel(routine, routine_context)
+
     def merge_one_environment(self, env_path):
         """
         Given an environment path, merges all of the routine tsts into a master
@@ -492,6 +567,71 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # Run this routine in parallel given the provided context
         self.run_routine_parallel(routine, routine_context)
 
+    def store_envs(self):
+        """
+        After generating function pointers, need to migrate the changes back
+        into the Manage 'environment' folder
+        """
+
+        atg_misc.print_msg("Storing updated environments ...")
+
+        # Name of the vcm
+        vcm_name = os.path.basename(self.configuration.manage_vcm_path)
+
+        # Where does the vcm live?
+        manage_parent_folder = os.path.dirname(self.configuration.manage_vcm_path)
+
+        # Where are our environments?
+        manage_envs_folder = os.path.join(
+            os.path.splitext(self.configuration.manage_vcm_path)[0], "environment"
+        )
+
+        # What are the name of our environments?
+        all_envs = glob.glob(os.path.join(manage_envs_folder, "*"))
+
+        # What files have we backed-up?
+        preserved = []
+
+        # For each environment
+        for env in all_envs:
+
+            # Find all of the artefacts
+            all_artefacts = glob.glob(os.path.join(env, "*"))
+
+            # For each artefact
+            for artefact in all_artefacts:
+
+                # Get the extension
+                ext = os.path.splitext(artefact)[1]
+
+                # We don't want .env files!
+                if ext == ".env":
+                    continue
+
+                # Create a back-up
+                to_keep = (artefact, "{artefact:s}.atg".format(artefact=artefact))
+                preserved.append(to_keep)
+                shutil.copyfile(*to_keep)
+
+        # What's our command?
+        cmd = os.path.expandvars(
+            "$VECTORCAST_DIR/manage -p {vcm_name:s} --apply-changes --force --verbose".format(
+                vcm_name=vcm_name
+            )
+        )
+
+        # Where do we want the log to go?
+        manage_log_file = os.path.join(manage_parent_folder, "apply_changes")
+
+        # Run Manage
+        atg_misc.run_cmd(
+            cmd, cwd=manage_parent_folder, log_file_prefix=manage_log_file,
+        )
+
+        # Restore the changed files
+        for overwrite, backup in preserved:
+            shutil.move(backup, overwrite)
+
     def process(self):
         """
         Performs a number of steps given a Manage project:
@@ -502,6 +642,17 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
             * Run the baselining stuff
         """
+
+        if self.configuration.options.gen_fptrs:
+            # If we're generating function pointers, then we do this as a
+            # standalone step
+            self.gen_fptrs()
+
+            # Store the updated environments
+            self.store_envs()
+
+            # Don't do anything else
+            return
 
         # Run ATG
         self.run_atg()
