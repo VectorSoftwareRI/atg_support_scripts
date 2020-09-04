@@ -196,9 +196,7 @@ class ProcessProject(atg_misc.ParallelExecutor):
         environ["VCAST_ATG_BASELINING"] = "1"
 
         # What PyEDG script are we going to run?
-        environ["VCAST_PYEDG_PATH"] = os.path.expandvars(
-            "$VECTORCAST_DIR/python/vector/apps/atg_utils/run_atg.py"
-        )
+        environ["VCAST_PYEDG_PATH"] = os.path.expandvars(os.path.join("$VECTORCAST_DIR", "python", "vector", "apps", "atg_utils", "un_atg.py"))
 
         # Find the EDG flags
         edg_flags = self.get_edg_flags(env_path)
@@ -333,7 +331,7 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
         env_name = os.path.basename(env_path)
         build_dir = os.path.dirname(env_path)
-        env_file = os.path.join(build_dir, "{:s}.env").format(env_name)
+        env_file = os.path.join(build_dir, "{:s}.env".format(env_name))
 
         baseliner = baseline_for_atg.Baseline(env_file=env_file, verbose=0)
         baseliner.run(
