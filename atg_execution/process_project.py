@@ -196,7 +196,11 @@ class ProcessProject(atg_misc.ParallelExecutor):
         environ["VCAST_ATG_BASELINING"] = "1"
 
         # What PyEDG script are we going to run?
-        environ["VCAST_PYEDG_PATH"] = os.path.expandvars(os.path.join("$VECTORCAST_DIR", "python", "vector", "apps", "atg_utils", "run_atg.py"))
+        environ["VCAST_PYEDG_PATH"] = os.path.expandvars(
+            os.path.join(
+                "$VECTORCAST_DIR", "python", "vector", "apps", "atg_utils", "run_atg.py"
+            )
+        )
 
         # Find the EDG flags
         edg_flags = self.get_edg_flags(env_path)
@@ -207,11 +211,12 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # We expect the TU to exist and be a file
         assert os.path.exists(tu_path) and os.path.isfile(tu_path)
 
+        # What's the path to PyEDG?
+        pyedg_path = os.path.expandvars(os.path.join("$VECTORCAST_DIR", "pyedg"))
+
         # Build-up our PyEDG command
-        cmd = os.path.expandvars(
-            "$VECTORCAST_DIR/pyedg {edg_flags:s} {tu:s}".format(
-                edg_flags=edg_flags, tu=tu_path
-            )
+        cmd = "{pyedg:s} {edg_flags:s} {tu:s}".format(
+            pyedg=pyedg, edg_flags=edg_flags, tu=tu_path,
         )
 
         # Run PyEDG and get the return code
