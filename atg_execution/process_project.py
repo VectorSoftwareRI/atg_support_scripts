@@ -22,6 +22,7 @@
 
 import os
 import shutil
+import re
 
 import atg_execution.baseline_for_atg as baseline_for_atg
 import atg_execution.misc as atg_misc
@@ -124,8 +125,15 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # We expect to have found our flags
         assert edg_flags is not None
 
+        # We need to change VectorCAST's round-bracket syntax into "proper"
+        # env-var syntax
+        with_env_vars = re.sub("\$\(([^\)]*)\)", "${\g<1>}", edg_flags)
+
+        # We can now expand the variables
+        expanded_edg_flags = os.path.expandvars(with_env_vars)
+
         # Return them
-        return edg_flags
+        return expanded_edg_flags
 
     def unit_to_tu_path(self, env_path, unit_name):
         """
@@ -374,7 +382,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
             enviroment_artefacts
         )
 
-        existing_tst = os.path.join(enviroment_artefacts, "{env:s}.tst".format(env=env_name))
+        existing_tst = os.path.join(
+            enviroment_artefacts, "{env:s}.tst".format(env=env_name)
+        )
         assert os.path.exists(existing_tst) and os.path.isfile(existing_tst)
 
         no_atg_tst = os.path.join(build_dir, "no_atg.tst")
