@@ -223,8 +223,8 @@ class ProcessProject(atg_misc.ParallelExecutor):
         pyedg_path = os.path.expandvars(os.path.join("$VECTORCAST_DIR", "pyedg"))
 
         # Build-up our PyEDG command
-        cmd = "{pyedg:s} {edg_flags:s} {tu:s}".format(
-            pyedg=pyedg, edg_flags=edg_flags, tu=tu_path,
+        cmd = "{pyedg_path:s} {edg_flags:s} {tu:s}".format(
+            pyedg_path=pyedg_path, edg_flags=edg_flags, tu=tu_path,
         )
 
         # Run PyEDG and get the return code
