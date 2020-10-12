@@ -23,6 +23,7 @@
 import os
 import sqlite3
 import xmltodict
+import pathlib
 
 import atg_execution.misc as atg_misc
 
@@ -45,7 +46,7 @@ class DiscoverEnvironmentDependencies(atg_misc.ParallelExecutor):
         super().__init__(configuration)
 
         # What's the directory that contains our source files?
-        self.repository_path = configuration.repository_path
+        self.repository_path = pathlib.Path(configuration.repository_path)
 
         # What are our environments?
         self.environments = manage_builder.built_environments
@@ -85,10 +86,10 @@ class DiscoverEnvironmentDependencies(atg_misc.ParallelExecutor):
             for dependency in val["file"]:
 
                 # Get the filename?
-                fname = dependency["#text"]
+                fname = pathlib.Path(dependency["#text"])
 
                 # Does the file path originate from our repository?
-                if fname.startswith(self.repository_path):
+                if self.repository_path in fname.parents:
 
                     #
                     # Obtain a _relative_ name -- this allows us to match to the
