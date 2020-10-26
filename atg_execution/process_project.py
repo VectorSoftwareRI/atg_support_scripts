@@ -74,6 +74,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
         # Number of seconds to perform ATG
         self.timeout = configuration.options.timeout
 
+        # Should we disable failures?
+        self.disable_failures = configuration.options.disable_failures
+
         # Number of baseling iterations to perform?
         self.baseline_iterations = configuration.options.baseline_iterations
 
@@ -445,7 +448,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
         build_dir = os.path.dirname(env_path)
         env_file = os.path.join(build_dir, "{:s}.env".format(env_name))
 
-        baseliner = baseline_for_atg.Baseline(env_file=env_file, verbose=0)
+        baseliner = baseline_for_atg.Baseline(
+            env_file=env_file, verbose=False, disable_failures=self.disable_failures
+        )
         baseliner.run(
             run_atg=False,
             atg_file=merged_tst_name,
