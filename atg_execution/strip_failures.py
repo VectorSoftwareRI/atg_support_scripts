@@ -34,7 +34,7 @@ from operator import attrgetter
 
 
 class StripFailures(object):
-    def __init__(self, env_name, input_tst, output_tst):
+    def __init__(self, env_name, input_tst, output_tst, disable_failures=False):
 
         # Environment we're processing
         self.env_name = env_name
@@ -45,6 +45,9 @@ class StripFailures(object):
         # Output file
         self.output_tst = output_tst
 
+        # Are we disabling failing tests?
+        self.disable_failures = disable_failures
+
         # Input lines
         self.input_lines = open(self.input_tst).readlines()
 
@@ -54,6 +57,9 @@ class StripFailures(object):
         # The lines we expect to strip
         self.to_strip = {}
 
+        # Tests we want to disable
+        self.hard_terminations = {}
+
     def calculate_failures(self):
         """
         Uses DataAPI to find all of the test-case failures for a given
@@ -62,6 +68,25 @@ class StripFailures(object):
 
         # Iterate on all test-cases
         for test in self.api.TestCase.all():
+
+            # Get the current unit/function/test-case name
+            curr_unit = test.unit_display_name
+            curr_func = test.function_display_name_ada
+            curr_name = test.name
+
+            # Did this test-case have a "hard termination"?
+            hard_termination = bool(test.failure_reasons) or bool(
+                test.history.get_signals()
+            )
+
+            # Build-up the default dictionary contents
+            if curr_unit not in self.hard_terminations:
+                self.hard_terminations[curr_unit] = {}
+            if curr_func not in self.hard_terminations[curr_unit]:
+                self.hard_terminations[curr_unit][curr_func] = {}
+
+            # Store if this test had a "hard termination"
+            self.hard_terminations[curr_unit][curr_func][curr_name] = hard_termination
 
             #
             # Get the expected values for the whole test
@@ -85,12 +110,6 @@ class StripFailures(object):
 
             # If we have failed elements
             if failed:
-
-                # Get the current unit/function/test-case name
-                curr_unit = test.unit_display_name
-                curr_func = test.function_display_name_ada
-                curr_name = test.name
-
                 # For each failed element
                 for f in failed:
 
@@ -193,6 +212,15 @@ class StripFailures(object):
                         # ... mark it for removal
                         strip = True
 
+                elif line.strip() == "TEST.END" and not in_import_failures:
+
+                    # If we're disabling failures and the test failed
+                    if (
+                        self.disable_failures
+                        and self.hard_terminations[curr_unit][curr_func][curr_name]
+                    ):
+                        stripped.write("TEST.COMPOUND_ONLY\n")
+
                 # If we're not stripping this line ...
                 if not strip and not in_import_failures:
                     # ... write it out!
@@ -212,10 +240,15 @@ if __name__ == "__main__":
     input_tst = sys.argv[1]
     output_tst = sys.argv[2]
 
+    # Do we want to disable failing tests?
+    disable_failures = bool(int(sys.argv[3]))
+
     # We are currently guessing the env name (TODO: fix this)
     env_name = os.path.splitext(glob.glob("*.env")[0])[0]
 
     # Run it
-    StripFailures(env_name, input_tst, output_tst).main()
+    StripFailures(
+        env_name, input_tst, output_tst, disable_failures=disable_failures
+    ).main()
 
 # EOF
