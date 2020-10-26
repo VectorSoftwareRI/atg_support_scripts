@@ -13,3 +13,4 @@ strict_rc = True
 atg_work_dir = None
 workers = None
 gen_fptrs = False
+disable_failures = False
