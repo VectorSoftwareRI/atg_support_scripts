@@ -46,12 +46,13 @@ VC_PATH = os.getenv("VECTORCAST_DIR")
     atg_misc.log_entry_exit, exclude_methods=["get_incr_call_count"]
 )
 class Baseline:
-    def __init__(self, env_file, verbose=1):
+    def __init__(self, env_file, verbose=True, disable_failures=False):
         self.env_file = os.path.basename(env_file)
         self.env_dir = os.path.splitext(self.env_file)[0]
         self.workdir = os.path.dirname(os.path.abspath(env_file))
         self.call_count = dict()
         self.verbose = verbose
+        self.disable_failures = disable_failures
 
     def __repr__(self):
         return str({"env_file": self.env_file})
@@ -114,7 +115,8 @@ class Baseline:
     def strip_failures(self, file_1, file_2):
         vpython = os.path.join(VC_PATH, "vpython")
         strip_fail_script = os.path.join(SCRIPTS_HOME_DIR, "strip_failures.py")
-        self.run_cmd([vpython, strip_fail_script, file_1, file_2])
+        disable_failures_str = "1" if self.disable_failures else "0"
+        self.run_cmd([vpython, strip_fail_script, file_1, file_2, disable_failures_str])
 
     def run_clicast(self, args, label="clicast"):
         clicast = os.path.join(VC_PATH, "clicast")

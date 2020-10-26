@@ -76,6 +76,12 @@ def get_default_parser():
     )
     parser.add("-j", "--workers", required=False, help="workers", type=nullable_int)
     parser.add("--atg_work_dir", required=False, help="quiet", type=nullable_string)
+    parser.add(
+        "--disable_failures",
+        required=False,
+        help="disable_failures",
+        type=boolean_string,
+    )
 
     return parser
 
