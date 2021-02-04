@@ -22,10 +22,16 @@
 
 import sys
 import re
+import chardet
 
 import atg_execution.misc as atg_misc
 
 pointer_deref_matcher = re.compile("\[\d*\]")
+
+
+def get_file_encoding(file):
+    with open(file, "rb") as fd:
+        return chardet.detect(fd.read())["encoding"]
 
 
 class TstLine:
@@ -151,7 +157,9 @@ class TstFileProcessor:
 
     def process(self, input_file, output_file):
 
-        with open(input_file, "r") as fin, open(output_file, "w") as fout:
+        with open(input_file, "r", encoding=get_file_encoding(input_file)) as fin, open(
+            output_file, "w"
+        ) as fout:
 
             in_test = False
             skip_line = False
