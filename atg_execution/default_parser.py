@@ -86,6 +86,7 @@ def get_default_parser():
         required=False,
         help="Generate function pointers",
         type=nullable_string,
+    )
     parser.add(
         "--disable_failures",
         required=False,
