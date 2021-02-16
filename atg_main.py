@@ -80,6 +80,12 @@ def atg_execution(options):
     process_options(options)
     configuration = load_configuration(options)
 
+    # Do a dance to ensure that we update the environment variables correctly
+    if configuration.env_vars:
+        env_copy = os.environ.copy()
+        env_copy.update(configuration.env_vars)
+        os.environ = env_copy
+
     if configuration.find_unchanged_files is not None:
         atg_misc.print_warn(
             "Finding unchanged files was configured, discovering changed files"
@@ -143,7 +149,9 @@ def atg_execution(options):
 
     # Create an incremental ATG object
     ia = atg_processor.ProcessProject(
-        configuration, impacted_envs, environment_dependencies,
+        configuration,
+        impacted_envs,
+        environment_dependencies,
     )
 
     # Process our environments
