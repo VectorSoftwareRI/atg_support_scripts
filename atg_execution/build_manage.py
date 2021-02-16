@@ -378,12 +378,12 @@ class ManageBuilder(atg_misc.ParallelExecutor):
         return success
 
     def build_env(self, env_name, env_location):
-        success = build_env(self.manage_data_obj, env_name, env_location)
+        returncode = build_env(self.manage_data_obj, env_name, env_location)
+
+        self.check_env(env_name, env_location, returncode=returncode)
 
         # Update the progress bar
         self.move_progress_bar()
-
-        return success
 
     def check_success_build(self, returncode, built_env):
         success = check_success_build(self.manage_data_obj, returncode, built_env)

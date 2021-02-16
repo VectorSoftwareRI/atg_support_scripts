@@ -28,6 +28,130 @@ import pathlib
 import atg_execution.misc as atg_misc
 
 
+def find_files(dependencies_obj, env_path):
+    """
+    Given an environment folder, finds the set of files this environment
+    depends on
+    """
+
+    # For each _file_, which environments depend on this file?
+    fnames_to_envs = {}
+
+    # For each environment, which files are used in this environment?
+    envs_to_fnames = {}
+
+    # Open-up the dependencies XML
+    xml_path = os.path.join(env_path, "include_dependencies.xml")
+
+    # Parse it
+    parsed = xmltodict.parse(open(xml_path).read(), force_list=["unit", "file"])
+
+    # For each unit
+    for val in parsed["includedeps"]["unit"]:
+
+        # If we don't have a 'file' attribute, then we can skip it
+        if "file" not in val:
+            continue
+
+        # Otherwise, walk each dependency file
+        for dependency in val["file"]:
+
+            # Get the filename?
+            fname = pathlib.Path(dependency["#text"])
+
+            # Does the file path originate from our repository?
+            if dependencies_obj.repository_path in fname.parents:
+
+                #
+                # Obtain a _relative_ name -- this allows us to match to the
+                # git diff!
+                #
+                rel_fname = os.path.relpath(fname, dependencies_obj.repository_path)
+
+                # If we haven't seen this file name before ...
+                if rel_fname not in fnames_to_envs:
+                    # ... initialise the dictionary
+                    fnames_to_envs[rel_fname] = set()
+
+                # Store that this environment depends on this file
+                fnames_to_envs[rel_fname].add(env_path)
+
+                # If we haven't seen the env before ...
+                if env_path not in envs_to_fnames:
+                    # ... add it to our dict
+                    envs_to_fnames[env_path] = set()
+
+                # Store the files used inside of this environment
+                envs_to_fnames[env_path].add(rel_fname)
+
+    return (fnames_to_envs, envs_to_fnames)
+
+
+def find_units_functions(dependencies_obj, env_path):
+    """
+    Given an environment folder, finds the name of the main unit
+    """
+
+    # Open-up a connection to 'cover.db'
+    conn = sqlite3.connect(os.path.join(env_path, "cover.db"))
+
+    # Grab a cursor
+    cursor = conn.cursor()
+
+    query = """
+SELECT source_files.path,
+   functions.name
+FROM   functions 
+   JOIN instrumented_files 
+     ON instrumented_files.id = functions.instrumented_file_id 
+   JOIN source_files 
+     ON source_files.id = instrumented_files.source_file_id; 
+""".strip()
+
+    # Execute our query
+    rows = cursor.execute(query)
+
+    # Store our units
+    units_to_functions = {}
+
+    for row in rows:
+        # Get the source file name and the function name
+        source_file_path, function_name = row
+
+        # Initialise the function dict
+        if source_file_path not in units_to_functions:
+            units_to_functions[source_file_path] = []
+
+        # Store this function
+        units_to_functions[source_file_path].append(function_name)
+
+    return units_to_functions
+
+
+def process_env(dependencies_obj, env_path):
+    """
+    Given an environment, expects the information we need
+    """
+
+    # Calcuate the map between files and environments
+    fnames_to_envs, envs_to_fnames = find_files(dependencies_obj, env_path)
+
+    # Calulate the map between environments and TUs
+    units_to_functions = find_units_functions(dependencies_obj, env_path)
+
+    return (fnames_to_envs, envs_to_fnames, units_to_functions)
+
+
+class DependenciesDataObj:
+    def __init__(self, configuration, manage_builder):
+
+        # What's the directory that contains our source files?
+        self.repository_path = pathlib.Path(configuration.repository_path)
+
+        # What are our environments?
+        self.environments = manage_builder.built_environments
+
+
 @atg_misc.for_all_methods(atg_misc.log_entry_exit)
 class DiscoverEnvironmentDependencies(atg_misc.ParallelExecutor):
     """
@@ -45,11 +169,7 @@ class DiscoverEnvironmentDependencies(atg_misc.ParallelExecutor):
         # Call the super constructor
         super().__init__(configuration)
 
-        # What's the directory that contains our source files?
-        self.repository_path = pathlib.Path(configuration.repository_path)
-
-        # What are our environments?
-        self.environments = manage_builder.built_environments
+        self.dependencies_data_obj = DependenciesDataObj(configuration, manage_builder)
 
         # For each _file_, which environments depend on this file?
         self.fnames_to_envs = {}
@@ -61,118 +181,23 @@ class DiscoverEnvironmentDependencies(atg_misc.ParallelExecutor):
         self.envs_to_units = {}
 
     def __repr__(self):
-        return str({"repository_path": self.repository_path})
-
-    def find_files(self, env_path):
-        """
-        Given an environment folder, finds the set of files this environment
-        depends on
-        """
-
-        # Open-up the dependencies XML
-        xml_path = os.path.join(env_path, "include_dependencies.xml")
-
-        # Parse it
-        parsed = xmltodict.parse(open(xml_path).read(), force_list=["unit", "file"])
-
-        # For each unit
-        for val in parsed["includedeps"]["unit"]:
-
-            # If we don't have a 'file' attribute, then we can skip it
-            if "file" not in val:
-                continue
-
-            # Otherwise, walk each dependency file
-            for dependency in val["file"]:
-
-                # Get the filename?
-                fname = pathlib.Path(dependency["#text"])
-
-                # Does the file path originate from our repository?
-                if self.repository_path in fname.parents:
-
-                    #
-                    # Obtain a _relative_ name -- this allows us to match to the
-                    # git diff!
-                    #
-                    rel_fname = os.path.relpath(fname, self.repository_path)
-
-                    # We're about to update the shared state, so grab the lock
-                    with self.update_shared_state():
-
-                        # If we haven't seen this file name before ...
-                        if rel_fname not in self.fnames_to_envs:
-                            # ... initialise the dictionary
-                            self.fnames_to_envs[rel_fname] = set()
-
-                        # Store that this environment depends on this file
-                        self.fnames_to_envs[rel_fname].add(env_path)
-
-                        # If we haven't seen the env before ...
-                        if env_path not in self.envs_to_fnames:
-                            # ... add it to our dict
-                            self.envs_to_fnames[env_path] = set()
-
-                        # Store the files used inside of this environment
-                        self.envs_to_fnames[env_path].add(rel_fname)
-
-    def find_units_functions(self, env_path):
-        """
-        Given an environment folder, finds the name of the main unit
-        """
-
-        # We expect this environment not to have been processed
-        assert env_path not in self.envs_to_units
-
-        # Open-up a connection to 'cover.db'
-        conn = sqlite3.connect(os.path.join(env_path, "cover.db"))
-
-        # Grab a cursor
-        cursor = conn.cursor()
-
-        query = """
-SELECT source_files.path,
-       functions.name
-FROM   functions 
-       JOIN instrumented_files 
-         ON instrumented_files.id = functions.instrumented_file_id 
-       JOIN source_files 
-         ON source_files.id = instrumented_files.source_file_id; 
-""".strip()
-
-        # Execute our query
-        rows = cursor.execute(query)
-
-        # Store our units
-        units_to_functions = {}
-
-        for row in rows:
-            # Get the source file name and the function name
-            source_file_path, function_name = row
-
-            # Initialise the function dict
-            if source_file_path not in units_to_functions:
-                units_to_functions[source_file_path] = []
-
-            # Store this function
-            units_to_functions[source_file_path].append(function_name)
-
-        # We're about to update the shared state, so grab the lock
-        with self.update_shared_state():
-
-            # Store details for this env
-            self.envs_to_units[env_path] = units_to_functions
+        return str({"repository_path": self.dependencies_data_obj.repository_path})
 
     def process_env(self, env_path):
-        """
-        Given an environment, expects the information we need
-        """
 
-        # Calcuate the map between files and environments
-        self.find_files(env_path)
+        fnames_to_envs, envs_to_fnames, units_to_functions = process_env(
+            self.dependencies_data_obj, env_path
+        )
 
-        # Calulate the map between environments and TUs
-        self.find_units_functions(env_path)
+        env_info = {}
+        env_info[env_path] = units_to_functions
+
+        with self.update_shared_state():
+            self.fnames_to_envs.update(fnames_to_envs)
+
+            self.envs_to_fnames.update(envs_to_fnames)
+
+            self.envs_to_units.update(env_info)
 
     def process(self):
         """
@@ -184,7 +209,7 @@ FROM   functions
         execution_context = []
 
         # For each environment/build directory
-        for env_name, build_dir in self.environments:
+        for env_name, build_dir in self.dependencies_data_obj.environments:
 
             # Calculate the full path to the environment
             env_path = os.path.join(build_dir, env_name)
