@@ -158,7 +158,7 @@ def atg_execution(options):
     ia.process()
 
     # Store files
-    configuration.store_updated_tests(ia.updated_files)
+    configuration.store_updated_tests(ia.project_data_obj.updated_files)
 
     atg_misc.print_msg("Processing completed!")
 
