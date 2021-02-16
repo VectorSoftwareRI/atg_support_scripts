@@ -344,8 +344,11 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
             # Rebuild the environment
             cmd = os.path.expandvars(
-                "$VECTORCAST_DIR/clicast -l c environment script run {env:s}.env".format(
-                    env=env
+                "{clicast:s} -l c environment script run {env:s}.env".format(
+                    clicast=os.path.expandvars(
+                        os.path.join("$VECTORCAST_DIR", "clicast")
+                    ),
+                    env=env,
                 )
             )
 
@@ -636,8 +639,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
         # What's our command?
         cmd = os.path.expandvars(
-            "$VECTORCAST_DIR/manage -p {vcm_name:s} --apply-changes --force --verbose".format(
-                vcm_name=vcm_name
+            "{manage:s} -p {vcm_name:s} --apply-changes --force --verbose".format(
+                manage=os.path.expandvars(os.path.join("$VECTORCAST_DIR", "manage")),
+                vcm_name=vcm_name,
             )
         )
 
