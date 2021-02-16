@@ -29,6 +29,7 @@ configuration = namedtuple(
         "repository_path",
         "manage_vcm_path",
         "compiler_node",
+        "env_vars",
         "final_tst_path",
         "find_unchanged_files",
         "store_updated_tests",
@@ -63,10 +64,13 @@ def parse_configuration(configuration_dict, options):
 
     find_unchanged_files = configuration_dict.get("find_unchanged_files", None)
 
+    env_vars = configuration_dict.get("env_vars", None)
+
     return configuration(
         repository_path,
         manage_vcm_path,
         compiler_node,
+        env_vars,
         final_tst_path,
         find_unchanged_files,
         store_updated_tests,
