@@ -38,7 +38,10 @@ class ProcessProject(atg_misc.ParallelExecutor):
     """
 
     def __init__(
-        self, configuration, impacted_environments, environment_dependencies,
+        self,
+        configuration,
+        impacted_environments,
+        environment_dependencies,
     ):
         # Call the super constructor
         super().__init__(configuration, display_progress_bar=True)
@@ -225,7 +228,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
         # Build-up our PyEDG command
         cmd = "{pyedg_path:s} {edg_flags:s} {tu:s}".format(
-            pyedg_path=pyedg_path, edg_flags=edg_flags, tu=tu_path,
+            pyedg_path=pyedg_path,
+            edg_flags=edg_flags,
+            tu=tu_path,
         )
 
         # Run PyEDG and get the return code
@@ -301,19 +306,35 @@ class ProcessProject(atg_misc.ParallelExecutor):
             atg_output_location = workdir
 
         # What's the prefix of our all outputs?
-        output_prefix = os.path.join(atg_output_location, "{env:s}".format(env=env),)
+        output_prefix = os.path.join(
+            atg_output_location,
+            "{env:s}".format(env=env),
+        )
 
         # Where to log the vpython output to?
         pyedg_log_prefix = "{:s}_env_modifier".format(output_prefix)
 
         # Build-up our vpython command
         cmd = os.path.expandvars(
-            "$VECTORCAST_DIR/vpython $VECTORCAST_DIR/python/vector/apps/atg_utils/fptr_env_modifier.py"
+            "{vpython:s} {fptr_script:s}".format(
+                vpython=os.path.join("$VECTORCAST_DIR", "vpython"),
+                fptr_script=os.path.join(
+                    "$VECTORCAST_DIR",
+                    "python",
+                    "vector",
+                    "apps",
+                    "atg_utils",
+                    "fptr_env_modifier.py",
+                ),
+            )
         )
 
         # Run PyEDG and get the return code
         out, _, returncode = atg_misc.run_cmd(
-            cmd, cwd=workdir, timeout=self.timeout, log_file_prefix=pyedg_log_prefix,
+            cmd,
+            cwd=workdir,
+            timeout=self.timeout,
+            log_file_prefix=pyedg_log_prefix,
         )
 
         if ".env modified." in out:
@@ -625,7 +646,9 @@ class ProcessProject(atg_misc.ParallelExecutor):
 
         # Run Manage
         atg_misc.run_cmd(
-            cmd, cwd=manage_parent_folder, log_file_prefix=manage_log_file,
+            cmd,
+            cwd=manage_parent_folder,
+            log_file_prefix=manage_log_file,
         )
 
         # Restore the changed files
