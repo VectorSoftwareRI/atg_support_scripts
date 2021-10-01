@@ -122,10 +122,15 @@ class TstLine:
     def is_return(self):
         if not self.is_value and not self.is_expected:
             return False
+
         line_key = self.line_key
+
         # <unit>.<subprog>.<param>
-        if line_key.split(".")[2].strip() == "return":
-            return True
+        parts = line_key.split(".")
+        if len(parts) > 2:
+            if parts[2].strip() == "return":
+                return True
+
         return False
 
 

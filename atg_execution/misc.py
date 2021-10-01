@@ -203,6 +203,12 @@ def run_cmd(cmd, cwd, environ=None, timeout=None, log_file_prefix=None, shell=Tr
     elapsed_time = end - start
 
     if log_file_prefix:
+        if len(log_file_prefix) > 100:
+            root = os.path.dirname(log_file_prefix)
+            suffix = os.path.basename(log_file_prefix)
+            suffix = hex(hash(suffix))
+            log_file_prefix = os.path.join(root, suffix)
+
         out_log_file = "{prefix}.out".format(prefix=log_file_prefix)
         err_log_file = "{prefix}.err".format(prefix=log_file_prefix)
 
