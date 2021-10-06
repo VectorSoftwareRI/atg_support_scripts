@@ -186,6 +186,12 @@ class ProcessProject(atg_misc.ParallelExecutor):
             ),
         )
 
+        if "::" in output_prefix or len(output_prefix) > 100:
+            root = os.path.dirname(output_prefix)
+            suffix = os.path.basename(output_prefix).replace(":", "_")
+            suffix = hex(abs(hash(suffix)))
+            output_prefix = os.path.join(root, suffix)
+
         # Where is ATG going to write its log to?
         log_file = "{:s}.log".format(output_prefix)
 
