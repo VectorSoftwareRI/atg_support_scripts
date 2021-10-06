@@ -29,6 +29,7 @@ from __future__ import (
 import glob
 import os
 import sys
+import re
 from vector.apps.DataAPI.unit_test_api import Api
 from operator import attrgetter
 
@@ -128,8 +129,15 @@ class StripFailures(object):
                     if ".[0]" in curr_item:
                         curr_item = curr_item.replace(".[0]", "[0]")
 
+                    if ".class members" in curr_item:
+                        curr_item = curr_item.replace(".class members", "")
+
+                    if " instance>>" in curr_item:
+                        curr_item = re.sub("<<([^>]*) instance>>", "(cl).\g<1>", curr_item)
+
                     # Store that we want to strip this failure
                     self.to_strip[curr_unit][curr_func][curr_name].add(curr_item)
+
 
     def write_stripped(self):
         """
@@ -175,7 +183,7 @@ class StripFailures(object):
                     #
                     # TODO: this is probably broken for C++ due to `::`
                     #
-                    curr_func = line.split(":")[1].strip()
+                    curr_func = line.split(":", 1)[1].split("(", 1)[0].strip()
 
                 elif line.startswith("TEST.NAME:"):
                     # Find the test-case name
@@ -199,7 +207,8 @@ class StripFailures(object):
                     # If we have an expected value ...
 
                     # Find the name of the current item
-                    curr_item = line.split(":")[1].strip()
+                    curr_item = line.split(":", 1)[1].strip()
+                    curr_item = ":".join(curr_item.split(":")[:-1])
 
                     # Obtain all of the lines to remove for the current test-case
                     try:
