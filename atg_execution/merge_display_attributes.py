@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # The MIT License
 #
 # Copyright (c) 2020 Vector Informatik, GmbH. http://vector.com
@@ -134,5 +136,10 @@ class MergeDisplayAttributes(object):
         m.extract_attributes()
         m.merge_attributes_to_dest()
 
+if __name__ == "__main__":
+    baseline_tst = sys.argv[1]
+    atg_tst = sys.argv[2]
+    merged_tst = sys.argv[3]
+    MergeDisplayAttributes.merge(baseline_tst, atg_tst, merged_tst)
 
 # EOF
