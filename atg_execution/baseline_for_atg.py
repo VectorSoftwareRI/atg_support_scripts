@@ -243,8 +243,10 @@ class Baseline:
                 # How many iterations are we skipping?
                 remaining_iters = max_iter - i - 1
 
-                # Ensure we wind-on correctly
-                parallel_object.move_progress_bar(count=remaining_iters)
+                if parallel_object:
+                    # Ensure we wind-on correctly
+                    parallel_object.move_progress_bar(count=remaining_iters)
+
                 break
 
         self.copyfile(next_file, FILE_FINAL)
