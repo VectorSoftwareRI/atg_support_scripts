@@ -3,6 +3,7 @@
 # Standard includes
 import pathlib
 import sys
+import os
 
 # Get our parent dir
 parent_dir = pathlib.Path(__file__).parent.parent.resolve()
@@ -18,6 +19,7 @@ def baseline(env_script):
     """
     Baselines the given script 'env_script'
     """
+    os.environ["VCAST_ATG_BASELINING"] = "1"
     bl = Baseline(env_file=str(env_script), verbose=True, disable_failures=False)
 
     # If you don't want to iterate at all
