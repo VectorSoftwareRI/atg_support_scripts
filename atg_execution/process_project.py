@@ -208,7 +208,7 @@ class ProcessProject(atg_misc.ParallelExecutor):
         environ["VCAST_ATG_LOG_FILE_NAME"] = log_file
 
         # What's the routine to process?
-        environ["VCAST_ATG_RESTRICT_SUBPROGRAM"] = routine_name
+        environ["VCAST_ATG_RESTRICT_SUBPROGRAM"] = routine_name + ".*"
 
         # Where are we going to write our output?
         environ["VCAST_PYEDG_ATG_OUTPUT_FILE"] = tst_file
@@ -233,17 +233,18 @@ class ProcessProject(atg_misc.ParallelExecutor):
         assert os.path.exists(tu_path) and os.path.isfile(tu_path)
 
         # What's the path to PyEDG?
-        pyedg_path = os.path.expandvars(os.path.join("$VECTORCAST_DIR", "pyedg"))
+        pyedg_path = os.path.expandvars(os.path.join("$VECTORCAST_DIR", "atg"))
 
         # Build-up our PyEDG command
-        cmd = "{pyedg_path:s} {edg_flags:s} {tu:s}".format(
+        cmd = "{pyedg_path:s} --force-edg \"{edg_flags:s}\" --force-tu \"{tu:s}\" {tst_file:s}".format(
             pyedg_path=pyedg_path,
             edg_flags=edg_flags,
             tu=tu_path,
+            tst_file=tst_file,
         )
 
         # Run PyEDG and get the return code
-        _, _, returncode = atg_misc.run_cmd(
+        out, err, returncode = atg_misc.run_cmd(
             cmd,
             cwd=env_path,
             environ=environ,
